@@ -29,7 +29,7 @@ public class FormAutomation {
             // Print WebDriver info
             BrowserDiagnostics.printWebDriverInfo(driver);
 
-            // Navigate to the website - using a properly formatted URL with protocol
+            // Navigate to the website with properly formatted URL
             System.out.println("Navigating to the website...");
 
             // First, let's make sure the browser is working by going to Google
@@ -41,7 +41,7 @@ public class FormAutomation {
             Thread.sleep(5000);
 
             // Now try to navigate to the actual site (replace with your actual URL)
-            String targetUrl = "https://xyz.com"; // Update this with your actual URL
+            String targetUrl = "https://sasq-sat.cbp.dhs.gov/person?query=person"; // Update this with your actual URL
             System.out.println("Navigating to: " + targetUrl);
             driver.get(targetUrl);
             System.out.println("Navigation initiated. Waiting for page to load...");
