@@ -3,80 +3,8 @@ package com.formautomation;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.firefox.FirefoxOptions;
-import org.openqa.selenium.edge.EdgeDriver;
-import org.openqa.selenium.edge.EdgeOptions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 
 public class FormAutomation {
-
-    /**
-     * Set up the WebDriver with appropriate options
-     * @return Configured WebDriver instance
-     */
-    private static WebDriver setupDriver() {
-        try {
-            String browserType = System.getProperty("browser", "chrome").toLowerCase();
-
-            switch (browserType) {
-                case "chrome":
-                    return setupChromeDriver();
-                case "firefox":
-                    return setupFirefoxDriver();
-                case "edge":
-                    return setupEdgeDriver();
-                default:
-                    System.out.println("Unsupported browser type: " + browserType + ". Defaulting to Chrome.");
-                    return setupChromeDriver();
-            }
-        } catch (Exception e) {
-            System.out.println("Error setting up WebDriver: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private static WebDriver setupChromeDriver() {
-        System.out.println("Setting up Chrome driver...");
-
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--start-maximized");
-        options.addArguments("--disable-notifications");
-        options.addArguments("--remote-allow-origins=*");
-
-        // Disable 'Save Password' prompt
-        Map<String, Object> prefs = new HashMap<>();
-        prefs.put("credentials_enable_service", false);
-        prefs.put("profile.password_manager_enabled", false);
-        options.setExperimentalOption("prefs", prefs);
-
-        return new ChromeDriver(options);
-    }
-
-    private static WebDriver setupFirefoxDriver() {
-        System.out.println("Setting up Firefox driver...");
-
-        FirefoxOptions options = new FirefoxOptions();
-        options.addArguments("--start-maximized");
-        options.addArguments("--disable-notifications");
-
-        return new FirefoxDriver(options);
-    }
-
-    private static WebDriver setupEdgeDriver() {
-        System.out.println("Setting up Edge driver...");
-
-        EdgeOptions options = new EdgeOptions();
-        options.addArguments("--start-maximized");
-        options.addArguments("--disable-notifications");
-
-        return new EdgeDriver(options);
-    }
-
     public static void main(String[] args) {
         System.out.println("Starting form automation...");
 
@@ -89,16 +17,6 @@ public class FormAutomation {
         // Save data to Excel for future reference
         ExcelManager.saveDataToExcel(personData);
 
-        // Print the generated data for reference
-        System.out.println("Generated person data:");
-        System.out.println("First Name: " + personData.getFirstName());
-        System.out.println("Last Name: " + personData.getLastName());
-        System.out.println("DOB: " + personData.getDob());
-        System.out.println("Passport #: " + personData.getPassportNumber());
-        System.out.println("Driver's License: " + personData.getDriverLicense());
-        System.out.println("A#: " + personData.getaNumber());
-        System.out.println("SSN: " + personData.getSsn());
-
         // Setup the WebDriver
         WebDriver driver = setupDriver();
 
@@ -108,14 +26,10 @@ public class FormAutomation {
         }
 
         try {
-            // Set longer implicit and explicit waits
-            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-
             // Print WebDriver info
             BrowserDiagnostics.printWebDriverInfo(driver);
 
-            // Navigate to the website with properly formatted URL
+            // Navigate to the website - using a properly formatted URL with protocol
             System.out.println("Navigating to the website...");
 
             // First, let's make sure the browser is working by going to Google
@@ -126,14 +40,20 @@ public class FormAutomation {
             // Wait a bit longer to make sure Google fully loads
             Thread.sleep(5000);
 
-            // Now try to navigate to the actual site
-            String targetUrl = "https://sasq-sat.cbp.dhs.gov/person?query=person";
+            // Initialize Angular helper
+            AngularHelper angularHelper = new AngularHelper(driver);
+
+            // Now try to navigate to the actual site (replace with your actual URL)
+            String targetUrl = "https://sasq-sat.cbp.dhs.gov/person?query=person"; // Your target URL
             System.out.println("Navigating to: " + targetUrl);
             driver.get(targetUrl);
             System.out.println("Navigation initiated. Waiting for page to load...");
 
-            // Wait for the page to load fully - increased from 15 to 20 seconds
-            Thread.sleep(20000);
+            // Wait for Angular to finish rendering
+            angularHelper.waitForAngular();
+
+            // Wait longer for the page to load - increased from 8 to 15 seconds
+            Thread.sleep(15000);
 
             // Print current URL to diagnose navigation issues
             System.out.println("Current URL: " + driver.getCurrentUrl());
@@ -143,20 +63,16 @@ public class FormAutomation {
             boolean firstPageSuccess = FormFiller.fillFirstPage(driver, personData);
 
             if (firstPageSuccess) {
-                // Wait longer for second page to load - increased from 5 to 10 seconds
-                Thread.sleep(10000);
+                // Wait for second page to load
+                Thread.sleep(5000);
 
                 // Fill out the second page
-                boolean secondPageSuccess = FormFiller.fillSecondPage(driver, personData);
+                FormFiller.fillSecondPage(driver, personData);
 
-                if (secondPageSuccess) {
-                    System.out.println("Form automation completed successfully!");
-                } else {
-                    System.out.println("Second page automation completed with some issues. Check logs for details.");
-                }
+                // Wait a bit before finishing
+                Thread.sleep(5000);
 
-                // Wait a bit before finishing - increased from 5 to 15 seconds
-                Thread.sleep(15000);
+                System.out.println("Form automation completed successfully!");
             } else {
                 System.out.println("Failed to complete the first page. Stopping.");
             }
@@ -166,8 +82,8 @@ public class FormAutomation {
         } finally {
             // Keep the browser open for a moment before closing
             try {
-                System.out.println("Automation complete. Keeping browser open for 30 seconds for review...");
-                Thread.sleep(30000); // Increased from 10 to 30 seconds
+                System.out.println("Automation complete. Keeping browser open for 10 seconds for review...");
+                Thread.sleep(10000);
             } catch (InterruptedException e) {
                 // Ignore
             }
@@ -175,6 +91,44 @@ public class FormAutomation {
             // Close the browser
             driver.quit();
             System.out.println("Browser closed. Script execution completed.");
+        }
+    }
+
+    private static WebDriver setupDriver() {
+        try {
+            // Set the path to the ChromeDriver executable
+            System.setProperty("webdriver.chrome.driver", "chromedriver.exe"); // Update with your path
+
+            // Configure ChromeOptions
+            ChromeOptions options = new ChromeOptions();
+
+            // Basic options
+            options.addArguments("--start-maximized");
+            options.addArguments("--remote-allow-origins=*");
+
+            // Disable automation flags
+            options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
+            options.setExperimentalOption("useAutomationExtension", false);
+
+            // IMPORTANT: Do not use existing profile for now as it's causing issues
+            // We'll use a fresh Chrome instance instead
+
+            // Disable notifications and popups
+            options.addArguments("--disable-notifications");
+            options.addArguments("--disable-popup-blocking");
+
+            // Set additional options to avoid DevTools issues
+            options.addArguments("--no-sandbox");
+            options.addArguments("--disable-dev-shm-usage");
+
+            System.out.println("Initializing Chrome Driver...");
+            WebDriver driver = new ChromeDriver(options);
+            System.out.println("Chrome Driver initialized successfully!");
+            return driver;
+        } catch (Exception e) {
+            System.out.println("Error setting up WebDriver: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
     }
 }

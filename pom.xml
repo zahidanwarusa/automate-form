@@ -15,7 +15,14 @@
   </properties>
 
   <dependencies>
-    <!-- Selenium -->
+    <!-- ngWebDriver for Angular applications -->
+    <dependency>
+      <groupId>com.paulhammant</groupId>
+      <artifactId>ngwebdriver</artifactId>
+      <version>1.2</version>
+    </dependency>
+
+    <!-- Additional Selenium dependencies -->
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-java</artifactId>
