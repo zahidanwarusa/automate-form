@@ -1,7 +1,7 @@
 package com.formautomation;
 
 /**
- * Class to hold all the personal data for form filling
+ * Class representing a person's data for form filling
  */
 public class PersonData {
     private String firstName;
@@ -10,12 +10,15 @@ public class PersonData {
     private String passportNumber;
     private String passportIssueDate;
     private String passportExpiryDate;
+    private String aNumber;
     private String driverLicense;
     private String ssn;
-    private String aNumber;
+    private String height;
+    private String weight;
 
-    // Default constructor
+    // Constructor
     public PersonData() {
+        // Default constructor
     }
 
     // Getters and setters
@@ -67,6 +70,14 @@ public class PersonData {
         this.passportExpiryDate = passportExpiryDate;
     }
 
+    public String getaNumber() {
+        return aNumber;
+    }
+
+    public void setaNumber(String aNumber) {
+        this.aNumber = aNumber;
+    }
+
     public String getDriverLicense() {
         return driverLicense;
     }
@@ -83,12 +94,20 @@ public class PersonData {
         this.ssn = ssn;
     }
 
-    public String getaNumber() {
-        return aNumber;
+    public String getHeight() {
+        return height;
     }
 
-    public void setaNumber(String aNumber) {
-        this.aNumber = aNumber;
+    public void setHeight(String height) {
+        this.height = height;
+    }
+
+    public String getWeight() {
+        return weight;
+    }
+
+    public void setWeight(String weight) {
+        this.weight = weight;
     }
 
     @Override
@@ -98,11 +117,9 @@ public class PersonData {
                 ", lastName='" + lastName + '\'' +
                 ", dob='" + dob + '\'' +
                 ", passportNumber='" + passportNumber + '\'' +
-                ", passportIssueDate='" + passportIssueDate + '\'' +
-                ", passportExpiryDate='" + passportExpiryDate + '\'' +
+                ", aNumber='" + aNumber + '\'' +
                 ", driverLicense='" + driverLicense + '\'' +
                 ", ssn='" + ssn + '\'' +
-                ", aNumber='" + aNumber + '\'' +
                 '}';
     }
 }

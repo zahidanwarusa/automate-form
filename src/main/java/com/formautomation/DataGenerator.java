@@ -1,109 +1,122 @@
 package com.formautomation;
 
-import com.github.javafaker.Faker;
-
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 /**
- * Utility class to generate random but valid personal data
+ * Utility class to generate random person data
  */
 public class DataGenerator {
-    private static final Faker faker = new Faker();
+    private static final String[] FIRST_NAMES = {
+            "James", "John", "Robert", "Michael", "William", "David", "Richard", "Joseph", "Thomas", "Charles",
+            "Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen"
+    };
+
+    private static final String[] LAST_NAMES = {
+            "Smith", "Johnson", "Williams", "Jones", "Brown", "Davis", "Miller", "Wilson", "Moore", "Taylor",
+            "Anderson", "Thomas", "Jackson", "White", "Harris", "Martin", "Thompson", "Garcia", "Martinez", "Robinson"
+    };
+
     private static final Random random = new Random();
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 
     /**
-     * Generate random personal data
-     * @return PersonData object with all needed information
+     * Generate random person data
+     * @return PersonData with random values
      */
     public static PersonData generatePersonData() {
         PersonData data = new PersonData();
 
-        // Generate first and last name
-        data.setFirstName(faker.name().firstName());
-        data.setLastName(faker.name().lastName());
+        // Generate random first and last name
+        data.setFirstName(getRandomFirstName());
+        data.setLastName(getRandomLastName());
 
-        // Generate DOB between 18-70 years old
-        Date dobDate = faker.date().birthday(18, 70);
-        data.setDob(dateFormat.format(dobDate));
+        // Generate random DOB (18-80 years old)
+        data.setDob(getRandomDOB(18, 80));
 
-        // Generate passport number (9 alphanumeric characters)
-        data.setPassportNumber(generateRandomString(9, true));
+        // Generate a random passport number
+        data.setPassportNumber("P" + randomNumberString(8));
 
-        // Generate passport issue date (1-5 years ago)
-        int issueYearsAgo = random.nextInt(5) + 1;
-        LocalDate issueDate = LocalDate.now().minusYears(issueYearsAgo);
-        data.setPassportIssueDate(formatLocalDate(issueDate));
+        // Generate passport dates
+        LocalDate today = LocalDate.now();
+        data.setPassportIssueDate(formatDate(today.minusYears(random.nextInt(5) + 1)));
+        data.setPassportExpiryDate(formatDate(today.plusYears(random.nextInt(5) + 5)));
 
-        // Generate passport expiry date (1-9 years in future)
-        int expiryYears = random.nextInt(9) + 1;
-        LocalDate expiryDate = LocalDate.now().plusYears(expiryYears);
-        data.setPassportExpiryDate(formatLocalDate(expiryDate));
+        // Generate an A number (Alien Registration Number)
+        data.setaNumber(randomNumberString(9));
 
-        // Generate driver's license (8-12 digit number)
-        data.setDriverLicense(generateRandomString(8 + random.nextInt(5), false));
+        // Generate driver's license
+        data.setDriverLicense("DL" + randomNumberString(8));
 
-        // Generate SSN (format: XXX-XX-XXXX)
-        String ssn = String.format("%03d-%02d-%04d",
-                100 + random.nextInt(900),
-                10 + random.nextInt(90),
-                1000 + random.nextInt(9000));
+        // Generate SSN (Social Security Number)
+        String ssn = randomNumberString(3) + "-" + randomNumberString(2) + "-" + randomNumberString(4);
         data.setSsn(ssn);
 
-        // Generate A-Number (9 digits)
-        data.setaNumber(generateRandomDigits(9));
+        // Generate height (5'0" - 6'6")
+        int feet = 5 + random.nextInt(2);
+        int inches = random.nextInt(12);
+        data.setHeight(feet + "'" + inches + "\"");
 
-        // Print the generated data for reference
-        System.out.println("Generated random data:");
-        System.out.println(data);
+        // Generate weight (120-250 lbs)
+        data.setWeight(String.valueOf(120 + random.nextInt(131)));
 
+        System.out.println("Generated random person data: " + data);
         return data;
     }
 
     /**
-     * Generate a random string of specified length
-     * @param length Length of the string
-     * @param includeAlpha Whether to include alphabetic characters
-     * @return Random string
+     * Get a random first name from the predefined list
+     * @return A random first name
      */
-    private static String generateRandomString(int length, boolean includeAlpha) {
-        String chars = includeAlpha ?
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" :
-                "0123456789";
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            int index = random.nextInt(chars.length());
-            sb.append(chars.charAt(index));
-        }
-        return sb.toString();
+    private static String getRandomFirstName() {
+        return FIRST_NAMES[random.nextInt(FIRST_NAMES.length)];
     }
 
     /**
-     * Generate a random string of digits
-     * @param length Length of the string
-     * @return Random string of digits
+     * Get a random last name from the predefined list
+     * @return A random last name
      */
-    private static String generateRandomDigits(int length) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            sb.append(random.nextInt(10));
-        }
-        return sb.toString();
+    private static String getRandomLastName() {
+        return LAST_NAMES[random.nextInt(LAST_NAMES.length)];
     }
 
     /**
-     * Format a LocalDate object to MM/dd/yyyy format
-     * @param date LocalDate to format
+     * Generate a random date of birth
+     * @param minAge Minimum age in years
+     * @param maxAge Maximum age in years
+     * @return A date string in MM/DD/YYYY format
+     */
+    private static String getRandomDOB(int minAge, int maxAge) {
+        LocalDate now = LocalDate.now();
+        int ageRange = maxAge - minAge + 1;
+        int randomAge = minAge + random.nextInt(ageRange);
+
+        LocalDate dob = now.minusYears(randomAge)
+                .minusDays(random.nextInt(365));
+
+        return formatDate(dob);
+    }
+
+    /**
+     * Format a LocalDate as MM/DD/YYYY
+     * @param date The date to format
      * @return Formatted date string
      */
-    private static String formatLocalDate(LocalDate date) {
+    private static String formatDate(LocalDate date) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
         return date.format(formatter);
+    }
+
+    /**
+     * Generate a random number string of a specific length
+     * @param length The length of the string to generate
+     * @return A string of random digits
+     */
+    private static String randomNumberString(int length) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            sb.append(random.nextInt(10)); // 0-9
+        }
+        return sb.toString();
     }
 }

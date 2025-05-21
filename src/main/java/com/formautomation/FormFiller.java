@@ -1,21 +1,13 @@
 package com.formautomation;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-
 import java.time.Duration;
 import java.util.List;
-import java.util.Random;
+import java.util.Set;
 
-/**
- * Utility class to handle form filling operations
- */
 public class FormFiller {
-    private static final Random random = new Random();
 
     /**
      * Fill out the first page of the form
@@ -27,97 +19,87 @@ public class FormFiller {
         try {
             System.out.println("Filling out first page...");
 
-            // Fill in last name
-            waitAndSendKeys(driver, By.id("lastName"), data.getLastName());
+            // Fill lastName field
+            WebElement lastNameField = driver.findElement(By.id("lastName"));
+            lastNameField.clear();
+            lastNameField.sendKeys(data.getLastName());
 
-            // Fill in first name
-            waitAndSendKeys(driver, By.id("firstName"), data.getFirstName());
+            // Fill firstName field
+            WebElement firstNameField = driver.findElement(By.id("firstName"));
+            firstNameField.clear();
+            firstNameField.sendKeys(data.getFirstName());
 
-            // Fill in DOB
-            waitAndSendKeys(driver, By.id("dob"), data.getDob());
+            // Fill DOB field
+            WebElement dobField = driver.findElement(By.id("dob"));
+            dobField.clear();
+            dobField.sendKeys(data.getDob());
 
-            // First, click the Search button and wait for results
+            // Scroll to find the Create TECS Lookout button
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript("window.scrollBy(0, 300)");
+
+            // Click Search button
             System.out.println("Clicking Search button...");
-            try {
-                // Try with class name and attribute
-                WebElement searchButton = driver.findElement(
-                        By.cssSelector("button.btn.btn-primary.search-btn[searchsubmit]"));
-                searchButton.click();
-                System.out.println("Search button clicked successfully");
-            } catch (Exception e) {
-                System.out.println("Could not find Search button with CSS selector, trying with XPath...");
-                try {
-                    // Try with XPath as fallback
-                    WebElement searchButton = driver.findElement(
-                            By.xpath("//button[contains(@class, 'search-btn') and @type='submit']"));
-                    searchButton.click();
-                    System.out.println("Search button clicked successfully with XPath");
-                } catch (Exception ex) {
-                    System.out.println("Still could not find Search button: " + ex.getMessage());
-                    // Continue anyway - the button might not be necessary in some cases
-                }
-            }
+            WebElement searchButton = driver.findElement(By.cssSelector("button[type='submit']"));
+            searchButton.click();
+            System.out.println("Search button clicked successfully");
 
             // Wait for search results to load
             System.out.println("Waiting for search results to load...");
-            try {
-                System.out.println("- Waiting 5 seconds for initial loading...");
-                Thread.sleep(5000); // Wait 5 seconds for initial loading
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
-                // Check if loading indicator exists and is visible
-                try {
-                    // Look for common loading indicators
-                    boolean loadingIndicatorFound = driver.findElements(By.cssSelector(".loading, .spinner, .loader")).size() > 0;
-                    if (loadingIndicatorFound) {
-                        System.out.println("- Loading indicator found, waiting for it to disappear...");
-                        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-                        wait.until(ExpectedConditions.invisibilityOfElementLocated(
-                                By.cssSelector(".loading, .spinner, .loader")));
-                    }
-                } catch (Exception e) {
-                    // Ignore - just continue with fixed delay
-                    System.out.println("- No loading indicator found, using fixed delay");
+            // Wait for initial loading to complete
+            System.out.println("- Waiting 5 seconds for initial loading...");
+            Thread.sleep(5000);
+
+            // Check for loading indicator (Optional - adjust based on actual page behavior)
+            try {
+                WebElement loadingIndicator = driver.findElement(By.cssSelector(".loading-indicator, .spinner, .loader, [aria-busy='true']"));
+                if (loadingIndicator.isDisplayed()) {
+                    System.out.println("- Loading indicator found, waiting for it to disappear...");
+                    wait.until(ExpectedConditions.invisibilityOf(loadingIndicator));
                 }
-
-                System.out.println("- Waiting additional 5 seconds for completion...");
-                Thread.sleep(5000); // Additional safety wait
-
-                System.out.println("Loading appears to be complete.");
-            } catch (InterruptedException e) {
-                System.out.println("Sleep interrupted while waiting for search results");
+            } catch (NoSuchElementException e) {
+                // Loading indicator not found - may not be present, continue
             }
 
-            // Scroll down a bit to find the Create TECS Lookout button
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("window.scrollBy(0, 300);");
+            // Wait a bit more for any asynchronous updates to complete
+            System.out.println("- Waiting additional 5 seconds for completion...");
+            Thread.sleep(5000);
 
-            // Additional wait to ensure the TECS Lookout button is available after scrolling
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                System.out.println("Sleep interrupted while waiting after scroll");
-            }
+            System.out.println("Loading appears to be complete.");
 
-            // Click on Create TECS Lookout button
+            // Look for Create TECS Lookout button
             System.out.println("Looking for Create TECS Lookout button...");
+
+            // Try multiple strategies to find the button
+            WebElement tecsButton = null;
+
             try {
-                WebElement createButton = driver.findElement(By.xpath("//a[contains(text(), 'Create TECS Lookout')]"));
-                createButton.click();
-                System.out.println("Create TECS Lookout button clicked successfully");
-            } catch (Exception e) {
-                System.out.println("Could not find Create TECS Lookout button, trying with different selector...");
+                // Strategy 1: By link text
+                tecsButton = driver.findElement(By.linkText("Create TECS Lookout"));
+            } catch (NoSuchElementException e) {
+                // Strategy 2: By contains text
                 try {
-                    WebElement createButton = driver.findElement(By.className("event-button"));
-                    createButton.click();
-                    System.out.println("Create TECS Lookout button clicked successfully using class name");
-                } catch (Exception ex) {
-                    System.out.println("Still could not find the Create TECS Lookout button: " + ex.getMessage());
-                    return false;
+                    tecsButton = driver.findElement(By.xpath("//a[contains(text(), 'Create TECS Lookout')]"));
+                } catch (NoSuchElementException e2) {
+                    // Strategy 3: By JavaScript search
+                    tecsButton = (WebElement) js.executeScript(
+                            "return document.querySelector(\"a.more.event-button\")");
                 }
             }
 
-            System.out.println("First page completed!");
-            return true;
+            if (tecsButton != null) {
+                js.executeScript("arguments[0].scrollIntoView(true);", tecsButton);
+                js.executeScript("arguments[0].click();", tecsButton);
+                System.out.println("Create TECS Lookout button clicked successfully");
+                System.out.println("First page completed!");
+                return true;
+            } else {
+                System.out.println("Failed to find Create TECS Lookout button");
+                return false;
+            }
+
         } catch (Exception e) {
             System.out.println("Error filling first page: " + e.getMessage());
             e.printStackTrace();
@@ -135,395 +117,240 @@ public class FormFiller {
         try {
             System.out.println("Filling out second page...");
 
-            // Wait for the second page to load
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-            wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("mat-select")));
+            // First, check if we're in a new window or tab
+            Set<String> windowHandles = driver.getWindowHandles();
+            if (windowHandles.size() > 1) {
+                System.out.println("Detected multiple windows/tabs. Switching to the new one...");
+                String originalWindow = driver.getWindowHandle();
 
-            // First dropdown selection (select option 68 - OB - OUTBOUND SUBJECT)
-            try {
-                // Find the first mat-select element
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(0).click();
-                Thread.sleep(1000);
-
-                // Select option from dropdown
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id("mat-option-68"))
-                );
-                option.click();
-            } catch (Exception e) {
-                System.out.println("Error on first dropdown: " + e.getMessage());
+                for (String windowHandle : windowHandles) {
+                    if (!windowHandle.equals(originalWindow)) {
+                        driver.switchTo().window(windowHandle);
+                        System.out.println("Switched to new window/tab: " + driver.getTitle());
+                        break;
+                    }
+                }
             }
 
-            // Second dropdown selection (select option 549 - AB - AG/BIO COUNTERMEASURES)
-            try {
-                // Find the second mat-select element
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(1).click();
-                Thread.sleep(1000);
+            // Wait for Angular application to load
+            System.out.println("Waiting for Angular application to stabilize...");
+            Thread.sleep(10000);
 
-                // Select option from dropdown
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id("mat-option-549"))
-                );
-                option.click();
+            // Check for Angular application using JavaScript
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Debug info
+            System.out.println("Page title: " + driver.getTitle());
+            System.out.println("Current URL: " + driver.getCurrentUrl());
+
+            // Try to stabilize Angular application using JavaScript
+            try {
+                js.executeScript(
+                        "var waitForAngular = function() { " +
+                                "  try { " +
+                                "    if (window.getAllAngularTestabilities) { " +
+                                "      var testabilities = window.getAllAngularTestabilities(); " +
+                                "      var callback = function() { console.log('Angular stabilized'); }; " +
+                                "      var whenStable = function(testability) { testability.whenStable(callback); }; " +
+                                "      testabilities.forEach(whenStable); " +
+                                "      return 'Waiting for Angular to stabilize'; " +
+                                "    } " +
+                                "    return 'No Angular found'; " +
+                                "  } catch(e) { " +
+                                "    return 'Error checking Angular: ' + e; " +
+                                "  } " +
+                                "}; " +
+                                "return waitForAngular();");
+
+                System.out.println("Attempted to wait for Angular to stabilize");
             } catch (Exception e) {
-                System.out.println("Error on second dropdown: " + e.getMessage());
+                System.out.println("Error waiting for Angular: " + e.getMessage());
             }
 
-            // Third dropdown selection (select option 238 - 0 - NO NOTIFICATION)
-            try {
-                // Find the third mat-select element
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(2).click();
-                Thread.sleep(1000);
-
-                // Select option from dropdown
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id("mat-option-238"))
-                );
-                option.click();
-            } catch (Exception e) {
-                System.out.println("Error on third dropdown: " + e.getMessage());
+            // Check for iframes (Angular components might be inside iframes)
+            List<WebElement> iframes = driver.findElements(By.tagName("iframe"));
+            if (!iframes.isEmpty()) {
+                System.out.println("Found " + iframes.size() + " iframes, switching to first one");
+                driver.switchTo().frame(0);
             }
 
-            // Fourth (Multiple) dropdown selection (select a random option from 253-548)
-            try {
-                // Find the fourth mat-select element
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(3).click();
-                Thread.sleep(1000);
+            // ADVANCED APPROACH: Check the actual DOM structure using JavaScript
+            System.out.println("\n--- DOM Analysis ---");
 
-                // Select random option from dropdown
-                String optionId = "mat-option-" + (253 + random.nextInt(6)); // Random between 253-258
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id(optionId))
-                );
-                option.click();
+            String bodyHTML = (String) js.executeScript("return document.body.outerHTML.substring(0, 1000);");
+            System.out.println("First 1000 chars of body: " + bodyHTML);
 
-                // Close the dropdown by clicking elsewhere
-                driver.findElement(By.tagName("body")).click();
-            } catch (Exception e) {
-                System.out.println("Error on fourth dropdown: " + e.getMessage());
+            // Check for common Angular Material components
+            Long matFormFieldCount = (Long) js.executeScript("return document.querySelectorAll('mat-form-field').length;");
+            System.out.println("mat-form-field count: " + matFormFieldCount);
+
+            Long matSelectCount = (Long) js.executeScript("return document.querySelectorAll('mat-select').length;");
+            System.out.println("mat-select count: " + matSelectCount);
+
+            Long comboboxCount = (Long) js.executeScript("return document.querySelectorAll('[role=\"combobox\"]').length;");
+            System.out.println("role=combobox count: " + comboboxCount);
+
+            // Print first few comboboxes for debugging
+            js.executeScript(
+                    "var comboboxes = document.querySelectorAll('[role=\"combobox\"]');" +
+                            "for(var i=0; i<Math.min(comboboxes.length, 3); i++) {" +
+                            "  console.log('Combobox ' + i + ':', " +
+                            "    'id=' + comboboxes[i].id, " +
+                            "    'aria-labelledby=' + comboboxes[i].getAttribute('aria-labelledby'), " +
+                            "    'class=' + comboboxes[i].className);" +
+                            "}");
+
+            // Use a completely JavaScript-based approach
+            System.out.println("\n--- USING PURE JAVASCRIPT APPROACH ---");
+
+            // First dropdown - "Subject Type"
+            selectOptionWithJavaScript(js, 0, "OB - OUTBOUND SUBJECT");
+
+            // Second dropdown - "Category"
+            selectOptionWithJavaScript(js, 1, "AB - AG/BIO COUNTERMEASURES");
+
+            // Third dropdown - "Notification"
+            selectOptionWithJavaScript(js, 2, "0 - NO NOTIFICATION");
+
+            // Fourth multi-select dropdown (if present)
+            if (comboboxCount >= 4) {
+                selectOptionWithJavaScript(js, 3, "PVRVK - PROVISIONAL REVOCATION");
             }
 
-            // Fifth dropdown selection (select option 242 - 0 - NOT ON PRIMARY)
-            try {
-                // Find the fifth mat-select element
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(4).click();
-                Thread.sleep(1000);
-
-                // Select option from dropdown
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id("mat-option-242"))
-                );
-                option.click();
-            } catch (Exception e) {
-                System.out.println("Error on fifth dropdown: " + e.getMessage());
+            // Fifth dropdown (if present)
+            if (comboboxCount >= 5) {
+                selectOptionWithJavaScript(js, 4, "0 - NOT ON PRIMARY");
             }
 
-            // Fill remarks field
-            try {
-                WebElement remarks = driver.findElement(By.id("mat-input-1"));
-                remarks.clear();
-                remarks.sendKeys("Automated test entry. Random data generated for testing purposes.");
-            } catch (Exception e) {
-                System.out.println("Error filling remarks: " + e.getMessage());
+            // Fill remarks textarea
+            Boolean remarksResult = (Boolean) js.executeScript(
+                    "var textareas = document.querySelectorAll('textarea');" +
+                            "if (textareas.length > 0) {" +
+                            "  textareas[0].value = 'Test remarks for automated entry - " + data.getLastName() + ", " + data.getFirstName() + "';" +
+                            "  textareas[0].dispatchEvent(new Event('input', { bubbles: true }));" +
+                            "  return true;" +
+                            "}" +
+                            "return false;");
+
+            System.out.println("Filled remarks field: " + remarksResult);
+
+            // Click "Add Sex" button and select option
+            clickButtonAndSelectOption(js, "Add Sex", "F - FEMALE");
+
+            // Click "Add Race" button and select option
+            clickButtonAndSelectOption(js, "Add Race", "A - ASIAN");
+
+            // Click "Add Eye Color" button and select option
+            clickButtonAndSelectOption(js, "Add Eye Color", "BL - BLUE");
+
+            // Click "Add Hair Color" button and select option
+            clickButtonAndSelectOption(js, "Add Hair Color", "BK - BLACK");
+
+            // Click "Add Name" button and fill first/last name
+            Boolean addNameResult = (Boolean) js.executeScript(
+                    "var buttons = Array.from(document.querySelectorAll('button'));" +
+                            "var addNameButton = buttons.find(b => b.textContent.includes('Add Name'));" +
+                            "if (addNameButton) {" +
+                            "  addNameButton.click();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;");
+
+            System.out.println("Clicked Add Name button: " + addNameResult);
+
+            if (addNameResult) {
+                Thread.sleep(1000);
+
+                // Find all input fields that might be name fields
+                Boolean nameFieldsResult = (Boolean) js.executeScript(
+                        "var inputs = document.querySelectorAll('input[type=\"text\"]');" +
+                                "var lastName, firstName;" +
+                                "for (var i = 0; i < inputs.length; i++) {" +
+                                "  var label = document.querySelector('label[for=\"' + inputs[i].id + '\"]');" +
+                                "  if (label && label.textContent.includes('Last Name')) {" +
+                                "    lastName = inputs[i];" +
+                                "  }" +
+                                "  if (label && label.textContent.includes('First Name')) {" +
+                                "    firstName = inputs[i];" +
+                                "  }" +
+                                "}" +
+                                "if (lastName && firstName) {" +
+                                "  lastName.value = '" + data.getLastName() + "';" +
+                                "  firstName.value = '" + data.getFirstName() + "';" +
+                                "  lastName.dispatchEvent(new Event('input', { bubbles: true }));" +
+                                "  firstName.dispatchEvent(new Event('input', { bubbles: true }));" +
+                                "  return true;" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Filled name fields: " + nameFieldsResult);
+
+                // If the above approach didn't work, try using IDs directly
+                if (!nameFieldsResult) {
+                    js.executeScript(
+                            "var lastNameInput = document.getElementById('mat-input-2');" +
+                                    "var firstNameInput = document.getElementById('mat-input-3');" +
+                                    "if (lastNameInput) {" +
+                                    "  lastNameInput.value = '" + data.getLastName() + "';" +
+                                    "  lastNameInput.dispatchEvent(new Event('input', { bubbles: true }));" +
+                                    "}" +
+                                    "if (firstNameInput) {" +
+                                    "  firstNameInput.value = '" + data.getFirstName() + "';" +
+                                    "  firstNameInput.dispatchEvent(new Event('input', { bubbles: true }));" +
+                                    "}");
+
+                    System.out.println("Attempted to fill name fields using direct IDs");
+                }
             }
 
-            // Select Y/N dropdown (mat-option-2 - Y)
-            try {
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(5).click();
+            // Click "Add DOB" button and fill DOB
+            Boolean addDobResult = (Boolean) js.executeScript(
+                    "var buttons = Array.from(document.querySelectorAll('button'));" +
+                            "var addDobButton = buttons.find(b => b.textContent.includes('Add DOB'));" +
+                            "if (addDobButton) {" +
+                            "  addDobButton.click();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;");
+
+            System.out.println("Clicked Add DOB button: " + addDobResult);
+
+            if (addDobResult) {
                 Thread.sleep(1000);
 
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id("mat-option-2"))
-                );
-                option.click();
-            } catch (Exception e) {
-                System.out.println("Error on Y/N dropdown: " + e.getMessage());
+                Boolean dobFieldResult = (Boolean) js.executeScript(
+                        "var datePickers = document.querySelectorAll('input[mask=\"00/00/0000\"]');" +
+                                "if (datePickers.length > 0) {" +
+                                "  for (var i = 0; i < datePickers.length; i++) {" +
+                                "    var label = document.querySelector('label[for=\"' + datePickers[i].id + '\"]');" +
+                                "    if (!label || label.textContent.includes('DOB') || !datePickers[i].value) {" +
+                                "      datePickers[i].value = '" + data.getDob() + "';" +
+                                "      datePickers[i].dispatchEvent(new Event('input', { bubbles: true }));" +
+                                "      return true;" +
+                                "    }" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Filled DOB field: " + dobFieldResult);
+
+                // Fallback approach if above didn't work
+                if (!dobFieldResult) {
+                    js.executeScript(
+                            "var dobInput = document.getElementById('mat-input-11');" +
+                                    "if (dobInput) {" +
+                                    "  dobInput.value = '" + data.getDob() + "';" +
+                                    "  dobInput.dispatchEvent(new Event('input', { bubbles: true }));" +
+                                    "}");
+
+                    System.out.println("Attempted to fill DOB field using direct ID");
+                }
             }
 
-            // Select height dropdown (select a random height)
-            try {
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(6).click();
-                Thread.sleep(1000);
+            // Add remaining fields as needed
+            addRemainingFields(js, data);
 
-                // Select random height option
-                String optionId = "mat-option-" + (8 + random.nextInt(13)); // Random between 8-20
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id(optionId))
-                );
-                option.click();
-            } catch (Exception e) {
-                System.out.println("Error on height dropdown: " + e.getMessage());
-            }
-
-            // Fill in weight
-            try {
-                WebElement weightInput = driver.findElement(By.id("mat-input-0"));
-                weightInput.clear();
-                weightInput.sendKeys(String.valueOf(120 + random.nextInt(131))); // Random between 120-250
-            } catch (Exception e) {
-                System.out.println("Error filling weight: " + e.getMessage());
-            }
-
-            // Add Sex
-            try {
-                // Click Add Sex button
-                WebElement addSexButton = driver.findElement(By.xpath("//button[contains(., 'Add Sex')]"));
-                addSexButton.click();
-                Thread.sleep(1000);
-
-                // Select from dropdown (F - FEMALE or M - MALE randomly)
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(dropdowns.size() - 1).click(); // Get the most recently added dropdown
-                Thread.sleep(1000);
-
-                // Random selection between male/female
-                String sexOption = random.nextBoolean() ? "mat-option-630" : "mat-option-631";
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id(sexOption))
-                );
-                option.click();
-            } catch (Exception e) {
-                System.out.println("Error adding sex: " + e.getMessage());
-            }
-
-            // Add Race
-            try {
-                // Click Add Race button
-                WebElement addRaceButton = driver.findElement(By.xpath("//button[contains(., 'Add Race')]"));
-                addRaceButton.click();
-                Thread.sleep(1000);
-
-                // Select from dropdown (random race)
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(dropdowns.size() - 1).click();
-                Thread.sleep(1000);
-
-                String raceOption = "mat-option-" + (594 + random.nextInt(6)); // Random between 594-599
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id(raceOption))
-                );
-                option.click();
-            } catch (Exception e) {
-                System.out.println("Error adding race: " + e.getMessage());
-            }
-
-            // Add Eye Color
-            try {
-                // Click Add Eye Color button
-                WebElement addEyeButton = driver.findElement(By.xpath("//button[contains(., 'Add Eye Color')]"));
-                addEyeButton.click();
-                Thread.sleep(1000);
-
-                // Select from dropdown (random eye color)
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(dropdowns.size() - 1).click();
-                Thread.sleep(1000);
-
-                String eyeOption = "mat-option-" + (600 + random.nextInt(12)); // Random between 600-611
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id(eyeOption))
-                );
-                option.click();
-            } catch (Exception e) {
-                System.out.println("Error adding eye color: " + e.getMessage());
-            }
-
-            // Add Hair Color
-            try {
-                // Click Add Hair Color button
-                WebElement addHairButton = driver.findElement(By.xpath("//button[contains(., 'Add Hair Color')]"));
-                addHairButton.click();
-                Thread.sleep(1000);
-
-                // Select from dropdown (random hair color)
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(dropdowns.size() - 1).click();
-                Thread.sleep(1000);
-
-                String hairOption = "mat-option-" + (612 + random.nextInt(15)); // Random between 612-626
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id(hairOption))
-                );
-                option.click();
-            } catch (Exception e) {
-                System.out.println("Error adding hair color: " + e.getMessage());
-            }
-
-            // Add Name (reusing previously generated name)
-            try {
-                // Click Add Name button
-                WebElement addNameButton = driver.findElement(By.xpath("//button[contains(., 'Add Name')]"));
-                addNameButton.click();
-                Thread.sleep(1000);
-
-                // Fill in last name (reuse from earlier)
-                WebElement lastNameInput = driver.findElement(By.id("mat-input-2"));
-                lastNameInput.clear();
-                lastNameInput.sendKeys(data.getLastName());
-
-                // Fill in first name (reuse from earlier)
-                WebElement firstNameInput = driver.findElement(By.id("mat-input-3"));
-                firstNameInput.clear();
-                firstNameInput.sendKeys(data.getFirstName());
-            } catch (Exception e) {
-                System.out.println("Error adding name: " + e.getMessage());
-            }
-
-            // Add DOB (reusing previously generated DOB)
-            try {
-                // Click Add DOB button
-                WebElement addDobButton = driver.findElement(By.xpath("//button[contains(., 'Add DOB')]"));
-                addDobButton.click();
-                Thread.sleep(1000);
-
-                // Fill in DOB
-                WebElement dobInput = driver.findElement(By.id("mat-input-11"));
-                dobInput.clear();
-                dobInput.sendKeys(data.getDob());
-            } catch (Exception e) {
-                System.out.println("Error adding DOB: " + e.getMessage());
-            }
-
-            // Add Citizenship (USA)
-            try {
-                // Click Add Citizenship button
-                WebElement addCitizenshipButton = driver.findElement(By.xpath("//button[contains(., 'Add Citizenship')]"));
-                addCitizenshipButton.click();
-                Thread.sleep(1000);
-
-                // Select USA from dropdown
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(dropdowns.size() - 1).click();
-                Thread.sleep(1000);
-
-                String usaOption = "mat-option-1260"; // USA - UNITED STATES OF AMERICA
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id(usaOption))
-                );
-                option.click();
-            } catch (Exception e) {
-                System.out.println("Error adding citizenship: " + e.getMessage());
-            }
-
-            // Add Passport
-            try {
-                // Click Add Passport button
-                WebElement addPassportButton = driver.findElement(By.xpath("//button[contains(., 'Add Passport')]"));
-                addPassportButton.click();
-                Thread.sleep(1000);
-
-                // Select passport type
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(dropdowns.size() - 1).click();
-                Thread.sleep(1000);
-
-                // Select Regular Passport
-                String passportTypeOption = "mat-option-1518"; // P - Regular
-                WebElement typeOption = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id(passportTypeOption))
-                );
-                typeOption.click();
-
-                // Fill passport number
-                WebElement passportNumberInput = driver.findElement(By.id("mat-input-19"));
-                passportNumberInput.clear();
-                passportNumberInput.sendKeys(data.getPassportNumber());
-
-                // Select passport country (USA)
-                List<WebElement> updatedDropdowns = driver.findElements(By.tagName("mat-select"));
-                updatedDropdowns.get(updatedDropdowns.size() - 1).click();
-                Thread.sleep(1000);
-
-                String usaOption = "mat-option-1520"; // USA - UNITED STATES OF AMERICA
-                WebElement countryOption = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id(usaOption))
-                );
-                countryOption.click();
-
-                // Fill passport issue date
-                WebElement passportIssueInput = driver.findElement(By.id("mat-input-20"));
-                passportIssueInput.clear();
-                passportIssueInput.sendKeys(data.getPassportIssueDate());
-
-                // Fill passport expiry date
-                WebElement passportExpiryInput = driver.findElement(By.id("mat-input-21"));
-                passportExpiryInput.clear();
-                passportExpiryInput.sendKeys(data.getPassportExpiryDate());
-            } catch (Exception e) {
-                System.out.println("Error adding passport: " + e.getMessage());
-            }
-
-            // Add A#
-            try {
-                // Click Add A# button
-                WebElement addAButton = driver.findElement(By.xpath("//button[contains(., 'Add A#')]"));
-                addAButton.click();
-                Thread.sleep(1000);
-
-                // Fill A# number
-                WebElement aNumberInput = driver.findElement(By.id("mat-input-22"));
-                aNumberInput.clear();
-                aNumberInput.sendKeys(data.getaNumber());
-            } catch (Exception e) {
-                System.out.println("Error adding A#: " + e.getMessage());
-            }
-
-            // Add Driver's License
-            try {
-                // Click Add Driver's License button
-                WebElement addLicenseButton = driver.findElement(By.xpath("//button[contains(., \"Add Driver's License\")]"));
-                addLicenseButton.click();
-                Thread.sleep(1000);
-
-                // Fill driver's license number
-                WebElement licenseInput = driver.findElement(By.id("mat-input-23"));
-                licenseInput.clear();
-                licenseInput.sendKeys(data.getDriverLicense());
-
-                // Select state
-                List<WebElement> dropdowns = driver.findElements(By.tagName("mat-select"));
-                dropdowns.get(dropdowns.size() - 1).click();
-                Thread.sleep(1000);
-
-                // Select a random US state
-                String stateOption = "mat-option-" + (1774 + random.nextInt(62)); // Random between 1774-1835
-                WebElement option = wait.until(
-                        ExpectedConditions.elementToBeClickable(By.id(stateOption))
-                );
-                option.click();
-            } catch (Exception e) {
-                System.out.println("Error adding driver's license: " + e.getMessage());
-            }
-
-            // Add SSN
-            try {
-                // Click Add SSN button
-                WebElement addSsnButton = driver.findElement(By.xpath("//button[contains(., 'Add SSN')]"));
-                addSsnButton.click();
-                Thread.sleep(1000);
-
-                // Wait for SSN input to appear and fill it
-                wait.until(
-                        ExpectedConditions.presenceOfElementLocated(By.xpath("//input[contains(@class, 'mat-input-element') and contains(@id, 'mat-input')]"))
-                );
-
-                // Find the most recently added input field (likely the SSN input)
-                List<WebElement> inputFields = driver.findElements(By.xpath("//input[contains(@class, 'mat-input-element') and contains(@id, 'mat-input')]"));
-                WebElement ssnInput = inputFields.get(inputFields.size() - 1);
-                ssnInput.clear();
-                ssnInput.sendKeys(data.getSsn());
-            } catch (Exception e) {
-                System.out.println("Error adding SSN: " + e.getMessage());
-            }
-
-            System.out.println("Second page completed!");
+            System.out.println("Second page completed successfully!");
             return true;
         } catch (Exception e) {
             System.out.println("Error filling second page: " + e.getMessage());
@@ -533,44 +360,487 @@ public class FormFiller {
     }
 
     /**
-     * Wait for an element to be visible and then send keys to it
-     * @param driver WebDriver instance
-     * @param by By selector for the element
-     * @param text Text to send
-     * @return true if successful, false otherwise
+     * Helper method to select an option from a dropdown using JavaScript
      */
-    private static boolean waitAndSendKeys(WebDriver driver, By by, String text) {
+    private static void selectOptionWithJavaScript(JavascriptExecutor js, int dropdownIndex, String optionText) {
         try {
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-            WebElement element = wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(by)
-            );
-            element.clear();
-            element.sendKeys(text);
-            return true;
+            // First click to open the dropdown
+            Boolean clickResult = (Boolean) js.executeScript(
+                    "var comboboxes = document.querySelectorAll('[role=\"combobox\"]');" +
+                            "if (comboboxes.length > " + dropdownIndex + ") {" +
+                            "  comboboxes[" + dropdownIndex + "].click();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;");
+
+            System.out.println("Clicked dropdown " + dropdownIndex + ": " + clickResult);
+
+            if (clickResult) {
+                Thread.sleep(1000);
+
+                // Then select the option by text
+                Boolean selectResult = (Boolean) js.executeScript(
+                        "var options = document.querySelectorAll('.mat-option-text');" +
+                                "for (var i = 0; i < options.length; i++) {" +
+                                "  if (options[i].textContent.trim() === '" + optionText + "') {" +
+                                "    options[i].click();" +
+                                "    return true;" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Selected option '" + optionText + "': " + selectResult);
+
+                // If selecting by text failed, try a backup approach using option IDs
+                if (!selectResult) {
+                    selectResult = (Boolean) js.executeScript(
+                            "var panel = document.querySelector('.mat-select-panel');" +
+                                    "if (panel) {" +
+                                    "  var option = Array.from(panel.querySelectorAll('mat-option')).find(o => o.textContent.includes('" + optionText + "'));" +
+                                    "  if (option) {" +
+                                    "    option.click();" +
+                                    "    return true;" +
+                                    "  }" +
+                                    "}" +
+                                    "return false;");
+
+                    System.out.println("Selected option using backup approach: " + selectResult);
+                }
+
+                Thread.sleep(500);
+            }
         } catch (Exception e) {
-            System.out.println("Error sending keys to element " + by + ": " + e.getMessage());
-            return false;
+            System.out.println("Error selecting option: " + e.getMessage());
         }
     }
 
     /**
-     * Wait for an element to be clickable and then click it
-     * @param driver WebDriver instance
-     * @param by By selector for the element
-     * @return true if successful, false otherwise
+     * Helper method to click a button and select an option from the resulting dropdown
      */
-    private static boolean waitAndClick(WebDriver driver, By by) {
+    private static void clickButtonAndSelectOption(JavascriptExecutor js, String buttonText, String optionText) {
         try {
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-            WebElement element = wait.until(
-                    ExpectedConditions.elementToBeClickable(by)
-            );
-            element.click();
-            return true;
+            Boolean buttonResult = (Boolean) js.executeScript(
+                    "var buttons = Array.from(document.querySelectorAll('button'));" +
+                            "var targetButton = buttons.find(b => b.textContent.includes('" + buttonText + "'));" +
+                            "if (targetButton) {" +
+                            "  targetButton.click();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;");
+
+            System.out.println("Clicked '" + buttonText + "' button: " + buttonResult);
+
+            if (buttonResult) {
+                Thread.sleep(1000);
+
+                // Find the most recently added dropdown and click it
+                Boolean dropdownResult = (Boolean) js.executeScript(
+                        "var comboboxes = document.querySelectorAll('[role=\"combobox\"]');" +
+                                "if (comboboxes.length > 0) {" +
+                                "  for (var i = comboboxes.length - 1; i >= 0; i--) {" +
+                                "    if (comboboxes[i].getAttribute('aria-expanded') !== 'true') {" +
+                                "      comboboxes[i].click();" +
+                                "      return true;" +
+                                "    }" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Clicked dropdown for " + buttonText + ": " + dropdownResult);
+
+                if (dropdownResult) {
+                    Thread.sleep(1000);
+
+                    // Select the option by text
+                    Boolean optionResult = (Boolean) js.executeScript(
+                            "var options = document.querySelectorAll('.mat-option-text');" +
+                                    "for (var i = 0; i < options.length; i++) {" +
+                                    "  if (options[i].textContent.trim() === '" + optionText + "') {" +
+                                    "    options[i].click();" +
+                                    "    return true;" +
+                                    "  }" +
+                                    "}" +
+                                    "return false;");
+
+                    System.out.println("Selected '" + optionText + "' option: " + optionResult);
+
+                    Thread.sleep(500);
+                }
+            }
         } catch (Exception e) {
-            System.out.println("Error clicking element " + by + ": " + e.getMessage());
-            return false;
+            System.out.println("Error in clickButtonAndSelectOption: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Add the remaining fields like citizenship, passport, etc.
+     */
+    private static void addRemainingFields(JavascriptExecutor js, PersonData data) {
+        try {
+            // Add Citizenship
+            Boolean addCitizenshipResult = (Boolean) js.executeScript(
+                    "var buttons = Array.from(document.querySelectorAll('button'));" +
+                            "var addCitizenshipButton = buttons.find(b => b.textContent.includes('Add Citizenship'));" +
+                            "if (addCitizenshipButton) {" +
+                            "  addCitizenshipButton.click();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;");
+
+            System.out.println("Clicked Add Citizenship button: " + addCitizenshipResult);
+
+            if (addCitizenshipResult) {
+                Thread.sleep(1000);
+
+                // Find and click the most recently added dropdown
+                Boolean citizenshipDropdownResult = (Boolean) js.executeScript(
+                        "var comboboxes = document.querySelectorAll('[role=\"combobox\"]');" +
+                                "if (comboboxes.length > 0) {" +
+                                "  for (var i = comboboxes.length - 1; i >= 0; i--) {" +
+                                "    if (comboboxes[i].getAttribute('aria-expanded') !== 'true') {" +
+                                "      comboboxes[i].click();" +
+                                "      return true;" +
+                                "    }" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Clicked citizenship dropdown: " + citizenshipDropdownResult);
+
+                if (citizenshipDropdownResult) {
+                    Thread.sleep(1000);
+
+                    // Select USA option
+                    Boolean usaOptionResult = (Boolean) js.executeScript(
+                            "var options = document.querySelectorAll('.mat-option-text');" +
+                                    "for (var i = 0; i < options.length; i++) {" +
+                                    "  if (options[i].textContent.includes('USA') || options[i].textContent.includes('UNITED STATES')) {" +
+                                    "    options[i].click();" +
+                                    "    return true;" +
+                                    "  }" +
+                                    "}" +
+                                    "return false;");
+
+                    System.out.println("Selected USA citizenship: " + usaOptionResult);
+                }
+            }
+
+            // Generate a random passport number if not already set
+            if (data.getPassportNumber() == null || data.getPassportNumber().isEmpty()) {
+                data.setPassportNumber("P" + System.currentTimeMillis() % 10000000);
+            }
+
+            // Add Passport
+            Boolean addPassportResult = (Boolean) js.executeScript(
+                    "var buttons = Array.from(document.querySelectorAll('button'));" +
+                            "var addPassportButton = buttons.find(b => b.textContent.includes('Add Passport'));" +
+                            "if (addPassportButton) {" +
+                            "  addPassportButton.click();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;");
+
+            System.out.println("Clicked Add Passport button: " + addPassportResult);
+
+            if (addPassportResult) {
+                Thread.sleep(1000);
+
+                // Select passport type (find most recent dropdown)
+                Boolean passportTypeResult = (Boolean) js.executeScript(
+                        "var comboboxes = document.querySelectorAll('[role=\"combobox\"]');" +
+                                "if (comboboxes.length > 0) {" +
+                                "  for (var i = comboboxes.length - 1; i >= 0; i--) {" +
+                                "    if (comboboxes[i].getAttribute('aria-expanded') !== 'true') {" +
+                                "      comboboxes[i].click();" +
+                                "      return true;" +
+                                "    }" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Clicked passport type dropdown: " + passportTypeResult);
+
+                if (passportTypeResult) {
+                    Thread.sleep(1000);
+
+                    // Select Regular passport type
+                    Boolean regularPassportResult = (Boolean) js.executeScript(
+                            "var options = document.querySelectorAll('.mat-option-text');" +
+                                    "for (var i = 0; i < options.length; i++) {" +
+                                    "  if (options[i].textContent.includes('Regular') || options[i].textContent.includes('R -')) {" +
+                                    "    options[i].click();" +
+                                    "    return true;" +
+                                    "  }" +
+                                    "}" +
+                                    "return false;");
+
+                    System.out.println("Selected Regular passport type: " + regularPassportResult);
+                }
+
+                // Fill passport number
+                Boolean passportNumberResult = (Boolean) js.executeScript(
+                        "var inputs = document.querySelectorAll('input[type=\"text\"]');" +
+                                "for (var i = 0; i < inputs.length; i++) {" +
+                                "  var label = document.querySelector('label[for=\"' + inputs[i].id + '\"]');" +
+                                "  if (label && label.textContent.includes('Passport #')) {" +
+                                "    inputs[i].value = '" + data.getPassportNumber() + "';" +
+                                "    inputs[i].dispatchEvent(new Event('input', { bubbles: true }));" +
+                                "    return true;" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Filled passport number: " + passportNumberResult);
+
+                // Select passport country dropdown
+                Boolean passportCountryResult = (Boolean) js.executeScript(
+                        "var comboboxes = document.querySelectorAll('[role=\"combobox\"]');" +
+                                "if (comboboxes.length > 0) {" +
+                                "  var passportCountryDropdown = null;" +
+                                "  for (var i = 0; i < comboboxes.length; i++) {" +
+                                "    if (comboboxes[i].getAttribute('aria-expanded') !== 'true') {" +
+                                "      var label = document.querySelector('label[id=\"' + comboboxes[i].getAttribute('aria-labelledby') + '\"]');" +
+                                "      if (!label || !passportCountryDropdown) {" +
+                                "        passportCountryDropdown = comboboxes[i];" +
+                                "      }" +
+                                "    }" +
+                                "  }" +
+                                "  if (passportCountryDropdown) {" +
+                                "    passportCountryDropdown.click();" +
+                                "    return true;" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Clicked passport country dropdown: " + passportCountryResult);
+
+                if (passportCountryResult) {
+                    Thread.sleep(1000);
+
+                    // Select USA
+                    Boolean usaOptionResult = (Boolean) js.executeScript(
+                            "var options = document.querySelectorAll('.mat-option-text');" +
+                                    "for (var i = 0; i < options.length; i++) {" +
+                                    "  if (options[i].textContent.includes('USA') || options[i].textContent.includes('UNITED STATES')) {" +
+                                    "    options[i].click();" +
+                                    "    return true;" +
+                                    "  }" +
+                                    "}" +
+                                    "return false;");
+
+                    System.out.println("Selected USA passport country: " + usaOptionResult);
+                }
+
+                // Fill passport issue date
+                Boolean passportIssueDateResult = (Boolean) js.executeScript(
+                        "var dateInputs = document.querySelectorAll('input[mask=\"00/00/0000\"]');" +
+                                "for (var i = 0; i < dateInputs.length; i++) {" +
+                                "  var label = document.querySelector('label[for=\"' + dateInputs[i].id + '\"]');" +
+                                "  if (label && label.textContent.includes('Issue')) {" +
+                                "    dateInputs[i].value = '01/01/2020';" +
+                                "    dateInputs[i].dispatchEvent(new Event('input', { bubbles: true }));" +
+                                "    return true;" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Filled passport issue date: " + passportIssueDateResult);
+
+                // Fill passport expiry date
+                Boolean passportExpiryDateResult = (Boolean) js.executeScript(
+                        "var dateInputs = document.querySelectorAll('input[mask=\"00/00/0000\"]');" +
+                                "for (var i = 0; i < dateInputs.length; i++) {" +
+                                "  var label = document.querySelector('label[for=\"' + dateInputs[i].id + '\"]');" +
+                                "  if (label && label.textContent.includes('Expiration')) {" +
+                                "    dateInputs[i].value = '01/01/2030';" +
+                                "    dateInputs[i].dispatchEvent(new Event('input', { bubbles: true }));" +
+                                "    return true;" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Filled passport expiry date: " + passportExpiryDateResult);
+            }
+
+            // Generate A# if not already set
+            if (data.getaNumber() == null || data.getaNumber().isEmpty()) {
+                data.setaNumber("A" + (10000000 + (int)(Math.random() * 90000000)));
+            }
+
+            // Add A#
+            Boolean addANumberResult = (Boolean) js.executeScript(
+                    "var buttons = Array.from(document.querySelectorAll('button'));" +
+                            "var addANumberButton = buttons.find(b => b.textContent.includes('Add A#'));" +
+                            "if (addANumberButton) {" +
+                            "  addANumberButton.click();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;");
+
+            System.out.println("Clicked Add A# button: " + addANumberResult);
+
+            if (addANumberResult) {
+                Thread.sleep(1000);
+
+                // Fill A# field
+                Boolean aNumberResult = (Boolean) js.executeScript(
+                        "var inputs = document.querySelectorAll('input[type=\"text\"]');" +
+                                "for (var i = 0; i < inputs.length; i++) {" +
+                                "  var label = document.querySelector('label[for=\"' + inputs[i].id + '\"]');" +
+                                "  if (label && label.textContent.includes('A #')) {" +
+                                "    inputs[i].value = '" + data.getaNumber() + "';" +
+                                "    inputs[i].dispatchEvent(new Event('input', { bubbles: true }));" +
+                                "    return true;" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Filled A# field: " + aNumberResult);
+            }
+
+            // Generate driver's license if not already set
+            if (data.getDriverLicense() == null || data.getDriverLicense().isEmpty()) {
+                data.setDriverLicense("DL" + (100000000 + (int)(Math.random() * 900000000)));
+            }
+
+            // Add Driver's License
+            Boolean addDriverLicenseResult = (Boolean) js.executeScript(
+                    "var buttons = Array.from(document.querySelectorAll('button'));" +
+                            "var addDriverLicenseButton = buttons.find(b => b.textContent.includes(\"Driver's License\"));" +
+                            "if (addDriverLicenseButton) {" +
+                            "  addDriverLicenseButton.click();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;");
+
+            System.out.println("Clicked Add Driver's License button: " + addDriverLicenseResult);
+
+            if (addDriverLicenseResult) {
+                Thread.sleep(1000);
+
+                // Fill driver's license number
+                Boolean driverLicenseNumberResult = (Boolean) js.executeScript(
+                        "var inputs = document.querySelectorAll('input[type=\"text\"]');" +
+                                "for (var i = 0; i < inputs.length; i++) {" +
+                                "  var label = document.querySelector('label[for=\"' + inputs[i].id + '\"]');" +
+                                "  if (label && label.textContent.includes('Driver\\'s License #')) {" +
+                                "    inputs[i].value = '" + data.getDriverLicense() + "';" +
+                                "    inputs[i].dispatchEvent(new Event('input', { bubbles: true }));" +
+                                "    return true;" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Filled driver's license number: " + driverLicenseNumberResult);
+
+                // Select state dropdown
+                Boolean stateDropdownResult = (Boolean) js.executeScript(
+                        "var comboboxes = document.querySelectorAll('[role=\"combobox\"]');" +
+                                "if (comboboxes.length > 0) {" +
+                                "  for (var i = comboboxes.length - 1; i >= 0; i--) {" +
+                                "    if (comboboxes[i].getAttribute('aria-expanded') !== 'true') {" +
+                                "      comboboxes[i].click();" +
+                                "      return true;" +
+                                "    }" +
+                                "  }" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Clicked state dropdown: " + stateDropdownResult);
+
+                if (stateDropdownResult) {
+                    Thread.sleep(1000);
+
+                    // Select Virginia or any US state
+                    Boolean stateOptionResult = (Boolean) js.executeScript(
+                            "var options = document.querySelectorAll('.mat-option-text');" +
+                                    "for (var i = 0; i < options.length; i++) {" +
+                                    "  if (options[i].textContent.includes('VA -') || options[i].textContent.includes('Virginia')) {" +
+                                    "    options[i].click();" +
+                                    "    return true;" +
+                                    "  }" +
+                                    "}" +
+                                    "// If Virginia not found, try any US state" +
+                                    "for (var i = 0; i < options.length; i++) {" +
+                                    "  if (options[i].textContent.match(/[A-Z]{2} - /)) {" +
+                                    "    options[i].click();" +
+                                    "    return true;" +
+                                    "  }" +
+                                    "}" +
+                                    "return false;");
+
+                    System.out.println("Selected state for driver's license: " + stateOptionResult);
+                }
+            }
+
+            // Generate SSN if not already set
+            if (data.getSsn() == null || data.getSsn().isEmpty()) {
+                // Generate a random SSN in format XXX-XX-XXXX
+                int area = 100 + (int)(Math.random() * 899);
+                int group = 10 + (int)(Math.random() * 89);
+                int serial = 1000 + (int)(Math.random() * 8999);
+                data.setSsn(area + "-" + group + "-" + serial);
+            }
+
+            // Add SSN
+            Boolean addSsnResult = (Boolean) js.executeScript(
+                    "var buttons = Array.from(document.querySelectorAll('button'));" +
+                            "var addSsnButton = buttons.find(b => b.textContent.includes('Add SSN'));" +
+                            "if (addSsnButton) {" +
+                            "  addSsnButton.click();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;");
+
+            System.out.println("Clicked Add SSN button: " + addSsnResult);
+
+            if (addSsnResult) {
+                Thread.sleep(1000);
+
+                // Find the SSN input field and fill it
+                Boolean ssnResult = (Boolean) js.executeScript(
+                        "var inputs = document.querySelectorAll('input[type=\"text\"]');" +
+                                "var ssnInput = null;" +
+                                "for (var i = 0; i < inputs.length; i++) {" +
+                                "  var label = document.querySelector('label[for=\"' + inputs[i].id + '\"]');" +
+                                "  if (label && label.textContent.includes('SSN')) {" +
+                                "    ssnInput = inputs[i];" +
+                                "    break;" +
+                                "  }" +
+                                "}" +
+                                "if (!ssnInput && inputs.length > 0) {" +
+                                "  // If we couldn't find by label, use the last added input field" +
+                                "  ssnInput = inputs[inputs.length - 1];" +
+                                "}" +
+                                "if (ssnInput) {" +
+                                "  ssnInput.value = '" + data.getSsn() + "';" +
+                                "  ssnInput.dispatchEvent(new Event('input', { bubbles: true }));" +
+                                "  return true;" +
+                                "}" +
+                                "return false;");
+
+                System.out.println("Filled SSN field: " + ssnResult);
+            }
+
+            // Finally, try to submit the form if there's a submit button
+            Boolean submitResult = (Boolean) js.executeScript(
+                    "var buttons = Array.from(document.querySelectorAll('button'));" +
+                            "var submitButton = buttons.find(b => {" +
+                            "  return b.textContent.includes('Submit') || " +
+                            "         b.textContent.includes('Save') || " +
+                            "         b.textContent.includes('Next') || " +
+                            "         b.type === 'submit';" +
+                            "});" +
+                            "if (submitButton) {" +
+                            "  submitButton.click();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;");
+
+            System.out.println("Attempted to click submit button: " + submitResult);
+
+        } catch (Exception e) {
+            System.out.println("Error adding remaining fields: " + e.getMessage());
         }
     }
 }
