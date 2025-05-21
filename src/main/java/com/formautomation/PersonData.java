@@ -10,8 +10,8 @@ public class PersonData {
     private String passportNumber;
     private String passportIssueDate;
     private String passportExpiryDate;
-    private String aNumber;
     private String driverLicense;
+    private String aNumber;
     private String ssn;
     private String height;
     private String weight;
@@ -70,20 +70,20 @@ public class PersonData {
         this.passportExpiryDate = passportExpiryDate;
     }
 
-    public String getaNumber() {
-        return aNumber;
-    }
-
-    public void setaNumber(String aNumber) {
-        this.aNumber = aNumber;
-    }
-
     public String getDriverLicense() {
         return driverLicense;
     }
 
     public void setDriverLicense(String driverLicense) {
         this.driverLicense = driverLicense;
+    }
+
+    public String getaNumber() {
+        return aNumber;
+    }
+
+    public void setaNumber(String aNumber) {
+        this.aNumber = aNumber;
     }
 
     public String getSsn() {
@@ -117,9 +117,13 @@ public class PersonData {
                 ", lastName='" + lastName + '\'' +
                 ", dob='" + dob + '\'' +
                 ", passportNumber='" + passportNumber + '\'' +
-                ", aNumber='" + aNumber + '\'' +
+                ", passportIssueDate='" + passportIssueDate + '\'' +
+                ", passportExpiryDate='" + passportExpiryDate + '\'' +
                 ", driverLicense='" + driverLicense + '\'' +
+                ", aNumber='" + aNumber + '\'' +
                 ", ssn='" + ssn + '\'' +
+                ", height='" + height + '\'' +
+                ", weight='" + weight + '\'' +
                 '}';
     }
 }
