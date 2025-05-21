@@ -36,22 +36,82 @@ public class FormFiller {
             // Fill in DOB
             waitAndSendKeys(driver, By.id("dob"), data.getDob());
 
+            // First, click the Search button and wait for results
+            System.out.println("Clicking Search button...");
+            try {
+                // Try with class name and attribute
+                WebElement searchButton = driver.findElement(
+                        By.cssSelector("button.btn.btn-primary.search-btn[searchsubmit]"));
+                searchButton.click();
+                System.out.println("Search button clicked successfully");
+            } catch (Exception e) {
+                System.out.println("Could not find Search button with CSS selector, trying with XPath...");
+                try {
+                    // Try with XPath as fallback
+                    WebElement searchButton = driver.findElement(
+                            By.xpath("//button[contains(@class, 'search-btn') and @type='submit']"));
+                    searchButton.click();
+                    System.out.println("Search button clicked successfully with XPath");
+                } catch (Exception ex) {
+                    System.out.println("Still could not find Search button: " + ex.getMessage());
+                    // Continue anyway - the button might not be necessary in some cases
+                }
+            }
+
+            // Wait for search results to load
+            System.out.println("Waiting for search results to load...");
+            try {
+                System.out.println("- Waiting 5 seconds for initial loading...");
+                Thread.sleep(5000); // Wait 5 seconds for initial loading
+
+                // Check if loading indicator exists and is visible
+                try {
+                    // Look for common loading indicators
+                    boolean loadingIndicatorFound = driver.findElements(By.cssSelector(".loading, .spinner, .loader")).size() > 0;
+                    if (loadingIndicatorFound) {
+                        System.out.println("- Loading indicator found, waiting for it to disappear...");
+                        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+                        wait.until(ExpectedConditions.invisibilityOfElementLocated(
+                                By.cssSelector(".loading, .spinner, .loader")));
+                    }
+                } catch (Exception e) {
+                    // Ignore - just continue with fixed delay
+                    System.out.println("- No loading indicator found, using fixed delay");
+                }
+
+                System.out.println("- Waiting additional 5 seconds for completion...");
+                Thread.sleep(5000); // Additional safety wait
+
+                System.out.println("Loading appears to be complete.");
+            } catch (InterruptedException e) {
+                System.out.println("Sleep interrupted while waiting for search results");
+            }
+
             // Scroll down a bit to find the Create TECS Lookout button
             JavascriptExecutor js = (JavascriptExecutor) driver;
             js.executeScript("window.scrollBy(0, 300);");
-            Thread.sleep(1000);
+
+            // Additional wait to ensure the TECS Lookout button is available after scrolling
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                System.out.println("Sleep interrupted while waiting after scroll");
+            }
 
             // Click on Create TECS Lookout button
+            System.out.println("Looking for Create TECS Lookout button...");
             try {
                 WebElement createButton = driver.findElement(By.xpath("//a[contains(text(), 'Create TECS Lookout')]"));
                 createButton.click();
+                System.out.println("Create TECS Lookout button clicked successfully");
             } catch (Exception e) {
                 System.out.println("Could not find Create TECS Lookout button, trying with different selector...");
                 try {
                     WebElement createButton = driver.findElement(By.className("event-button"));
                     createButton.click();
+                    System.out.println("Create TECS Lookout button clicked successfully using class name");
                 } catch (Exception ex) {
-                    System.out.println("Still could not find the button. Stopping.");
+                    System.out.println("Still could not find the Create TECS Lookout button: " + ex.getMessage());
                     return false;
                 }
             }

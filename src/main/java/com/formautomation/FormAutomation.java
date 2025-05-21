@@ -40,15 +40,18 @@ public class FormAutomation {
             // Wait a bit longer to make sure Google fully loads
             Thread.sleep(5000);
 
-            // Now try to navigate to the actual site
-            driver.get("https://xyz.com"); // Replace with your actual URL
+            // Now try to navigate to the actual site (replace with your actual URL)
+            String targetUrl = "https://xyz.com"; // Update this with your actual URL
+            System.out.println("Navigating to: " + targetUrl);
+            driver.get(targetUrl);
             System.out.println("Navigation initiated. Waiting for page to load...");
 
-            // Wait longer for the page to load
-            Thread.sleep(8000);
+            // Wait longer for the page to load - increased from 8 to 15 seconds
+            Thread.sleep(15000);
 
             // Print current URL to diagnose navigation issues
             System.out.println("Current URL: " + driver.getCurrentUrl());
+            System.out.println("Page title: " + driver.getTitle());
 
             // Fill out the first page
             boolean firstPageSuccess = FormFiller.fillFirstPage(driver, personData);
