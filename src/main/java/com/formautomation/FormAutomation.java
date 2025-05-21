@@ -60,15 +60,25 @@ public class FormAutomation {
     private static WebDriver setupDriver() {
         try {
             // Set the path to the ChromeDriver executable
-            System.setProperty("webdriver.chrome.driver", "C://WebDrivers/chromedriver.exe"); // Update with your path
+            System.setProperty("webdriver.chrome.driver", "chromedriver.exe"); // Update with your path
 
             // Configure ChromeOptions
             ChromeOptions options = new ChromeOptions();
-            options.addArguments("--start-maximized");
 
-            // Add additional options that may help with compatibility
+            // Use an existing Chrome profile (comment out these lines if not using a profile)
+            String userDataDir = "C:\\Users\\YourUsername\\AppData\\Local\\Google\\Chrome\\User Data"; // Update with your path
+            String profileDir = "Profile 1"; // Update with your profile directory name
+            options.addArguments("--user-data-dir=" + userDataDir);
+            options.addArguments("--profile-directory=" + profileDir);
+
+            // Add standard options
+            options.addArguments("--start-maximized");
             options.addArguments("--remote-allow-origins=*");
             options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
+
+            // Disable notifications, password saving prompts, and other popups
+            options.addArguments("--disable-notifications");
+            options.addArguments("--disable-popup-blocking");
 
             // Uncomment the line below if you want to run headless (no browser window)
             // options.addArguments("--headless=new");
