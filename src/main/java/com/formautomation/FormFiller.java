@@ -19,30 +19,108 @@ public class FormFiller {
         try {
             System.out.println("Filling out first page...");
 
-            // Fill lastName field
-            WebElement lastNameField = driver.findElement(By.id("lastName"));
-            lastNameField.clear();
-            lastNameField.sendKeys(data.getLastName());
+            // Add a longer wait for the page to be fully loaded
+            Thread.sleep(3000);
 
-            // Fill firstName field
-            WebElement firstNameField = driver.findElement(By.id("firstName"));
-            firstNameField.clear();
-            firstNameField.sendKeys(data.getFirstName());
-
-            // Fill DOB field
-            WebElement dobField = driver.findElement(By.id("dob"));
-            dobField.clear();
-            dobField.sendKeys(data.getDob());
-
-            // Scroll to find the Create TECS Lookout button
+            // Initialize JavaScript executor for more reliable interaction
             JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("window.scrollBy(0, 300)");
 
-            // Click Search button
-            System.out.println("Clicking Search button...");
-            WebElement searchButton = driver.findElement(By.cssSelector("button[type='submit']"));
-            searchButton.click();
-            System.out.println("Search button clicked successfully");
+            // Fill lastName field using JavaScript
+            WebElement lastNameField = driver.findElement(By.id("lastName"));
+            js.executeScript("arguments[0].value = arguments[1]", lastNameField, data.getLastName());
+            js.executeScript("arguments[0].dispatchEvent(new Event('input', { bubbles: true }))", lastNameField);
+            System.out.println("Last name filled: " + data.getLastName());
+
+            // Fill firstName field using JavaScript
+            WebElement firstNameField = driver.findElement(By.id("firstName"));
+            js.executeScript("arguments[0].value = arguments[1]", firstNameField, data.getFirstName());
+            js.executeScript("arguments[0].dispatchEvent(new Event('input', { bubbles: true }))", firstNameField);
+            System.out.println("First name filled: " + data.getFirstName());
+
+            // Fill DOB field using JavaScript
+            WebElement dobField = driver.findElement(By.id("dob"));
+            js.executeScript("arguments[0].value = arguments[1]", dobField, data.getDob());
+            js.executeScript("arguments[0].dispatchEvent(new Event('input', { bubbles: true }))", dobField);
+            System.out.println("DOB filled: " + data.getDob());
+
+            // Scroll down to ensure the search button is in view
+            js.executeScript("window.scrollBy(0, 300)");
+            Thread.sleep(1000);
+
+            // Find search button using different methods
+            WebElement searchButton = null;
+
+            try {
+                // First try: by CSS selector
+                searchButton = driver.findElement(By.cssSelector("button[type='submit']"));
+                System.out.println("Found search button by CSS selector");
+            } catch (Exception e) {
+                System.out.println("Could not find search button by CSS selector: " + e.getMessage());
+
+                try {
+                    // Second try: by XPath with text content
+                    searchButton = driver.findElement(By.xpath("//button[contains(text(), 'Search')]"));
+                    System.out.println("Found search button by XPath with text");
+                } catch (Exception e2) {
+                    System.out.println("Could not find search button by XPath with text: " + e2.getMessage());
+
+                    try {
+                        // Third try: any button that might be the search button
+                        List<WebElement> allButtons = driver.findElements(By.tagName("button"));
+                        System.out.println("Found " + allButtons.size() + " buttons on the page");
+
+                        for (int i = 0; i < allButtons.size(); i++) {
+                            WebElement button = allButtons.get(i);
+                            String buttonText = button.getText().toLowerCase();
+                            System.out.println("Button " + i + " text: " + buttonText);
+
+                            if (buttonText.contains("search") ||
+                                    buttonText.contains("submit") ||
+                                    buttonText.contains("go") ||
+                                    buttonText.isEmpty()) {
+                                searchButton = button;
+                                System.out.println("Found potential search button with text: " + buttonText);
+                                break;
+                            }
+                        }
+                    } catch (Exception e3) {
+                        System.out.println("Error finding buttons: " + e3.getMessage());
+                    }
+                }
+            }
+
+            // Print details about the button we found
+            if (searchButton != null) {
+                System.out.println("Search button found: " + searchButton.getTagName() + " " +
+                        "isDisplayed=" + searchButton.isDisplayed() + " " +
+                        "isEnabled=" + searchButton.isEnabled());
+
+                // Get button location
+                Point location = searchButton.getLocation();
+                System.out.println("Button location: x=" + location.getX() + ", y=" + location.getY());
+
+                // Try to make sure the button is visible
+                js.executeScript("arguments[0].scrollIntoView({block: 'center'});", searchButton);
+                Thread.sleep(1000);
+
+                System.out.println("Clicking Search button...");
+                try {
+                    // Try JavaScript click as it's more reliable
+                    js.executeScript("arguments[0].click();", searchButton);
+                    System.out.println("Search button clicked successfully using JavaScript");
+                } catch (Exception jsClickException) {
+                    System.out.println("JavaScript click failed: " + jsClickException.getMessage());
+
+                    // Try regular click as last resort
+                    searchButton.click();
+                    System.out.println("Search button clicked successfully using WebElement click");
+                }
+            } else {
+                // If we can't find the button, try to submit the form directly
+                System.out.println("Search button not found, trying to submit the form directly");
+                WebElement form = driver.findElement(By.tagName("form"));
+                js.executeScript("arguments[0].submit();", form);
+            }
 
             // Wait for search results to load
             System.out.println("Waiting for search results to load...");
@@ -78,21 +156,53 @@ public class FormFiller {
             try {
                 // Strategy 1: By link text
                 tecsButton = driver.findElement(By.linkText("Create TECS Lookout"));
+                System.out.println("Found TECS button by link text");
             } catch (NoSuchElementException e) {
                 // Strategy 2: By contains text
                 try {
                     tecsButton = driver.findElement(By.xpath("//a[contains(text(), 'Create TECS Lookout')]"));
+                    System.out.println("Found TECS button by XPath text contains");
                 } catch (NoSuchElementException e2) {
                     // Strategy 3: By JavaScript search
-                    tecsButton = (WebElement) js.executeScript(
-                            "return document.querySelector(\"a.more.event-button\")");
+                    try {
+                        tecsButton = (WebElement) js.executeScript(
+                                "return document.querySelector(\"a.more.event-button\")");
+                        System.out.println("Found TECS button by JavaScript");
+                    } catch (Exception e3) {
+                        // Strategy 4: By any link with TECS in it
+                        try {
+                            List<WebElement> links = driver.findElements(By.tagName("a"));
+                            for (WebElement link : links) {
+                                if (link.getText().contains("TECS") || link.getText().contains("Lookout")) {
+                                    tecsButton = link;
+                                    System.out.println("Found TECS button by scanning links: " + link.getText());
+                                    break;
+                                }
+                            }
+                        } catch (Exception e4) {
+                            System.out.println("Error scanning links: " + e4.getMessage());
+                        }
+                    }
                 }
             }
 
             if (tecsButton != null) {
-                js.executeScript("arguments[0].scrollIntoView(true);", tecsButton);
-                js.executeScript("arguments[0].click();", tecsButton);
-                System.out.println("Create TECS Lookout button clicked successfully");
+                // Try to make sure the button is visible
+                js.executeScript("arguments[0].scrollIntoView({block: 'center'});", tecsButton);
+                Thread.sleep(1000);
+
+                try {
+                    // Try JavaScript click as it's more reliable
+                    js.executeScript("arguments[0].click();", tecsButton);
+                    System.out.println("Create TECS Lookout button clicked successfully using JavaScript");
+                } catch (Exception jsClickException) {
+                    System.out.println("JavaScript click failed: " + jsClickException.getMessage());
+
+                    // Try regular click as last resort
+                    tecsButton.click();
+                    System.out.println("Create TECS Lookout button clicked successfully using WebElement click");
+                }
+
                 System.out.println("First page completed!");
                 return true;
             } else {
