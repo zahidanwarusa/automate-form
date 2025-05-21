@@ -8,6 +8,9 @@ public class FormAutomation {
     public static void main(String[] args) {
         System.out.println("Starting form automation...");
 
+        // Print diagnostic information before starting
+        BrowserDiagnostics.printDiagnosticInfo();
+
         // Generate random person data
         PersonData personData = DataGenerator.generatePersonData();
 
@@ -23,12 +26,29 @@ public class FormAutomation {
         }
 
         try {
-            // Navigate to the website
-            System.out.println("Navigating to the website...");
-            driver.get("https://xyz.com"); // Make sure to include the protocol (http:// or https://)
+            // Print WebDriver info
+            BrowserDiagnostics.printWebDriverInfo(driver);
 
-            // Wait for the page to load
-            Thread.sleep(3000);
+            // Navigate to the website - using a properly formatted URL with protocol
+            System.out.println("Navigating to the website...");
+
+            // First, let's make sure the browser is working by going to Google
+            System.out.println("Testing navigation with Google...");
+            driver.get("https://www.google.com");
+            System.out.println("Successfully loaded Google. Now navigating to target site...");
+
+            // Wait a bit longer to make sure Google fully loads
+            Thread.sleep(5000);
+
+            // Now try to navigate to the actual site
+            driver.get("https://xyz.com"); // Replace with your actual URL
+            System.out.println("Navigation initiated. Waiting for page to load...");
+
+            // Wait longer for the page to load
+            Thread.sleep(8000);
+
+            // Print current URL to diagnose navigation issues
+            System.out.println("Current URL: " + driver.getCurrentUrl());
 
             // Fill out the first page
             boolean firstPageSuccess = FormFiller.fillFirstPage(driver, personData);
@@ -51,9 +71,17 @@ public class FormAutomation {
             System.out.println("An error occurred during automation: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            // Keep the browser open for review (you can close it by uncommenting the line below)
-            // driver.quit();
-            System.out.println("Script execution completed.");
+            // Keep the browser open for a moment before closing
+            try {
+                System.out.println("Automation complete. Keeping browser open for 10 seconds for review...");
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                // Ignore
+            }
+
+            // Close the browser
+            driver.quit();
+            System.out.println("Browser closed. Script execution completed.");
         }
     }
 
@@ -65,26 +93,29 @@ public class FormAutomation {
             // Configure ChromeOptions
             ChromeOptions options = new ChromeOptions();
 
-            // Use an existing Chrome profile (comment out these lines if not using a profile)
-            String userDataDir = "C:\\Users\\YourUsername\\AppData\\Local\\Google\\Chrome\\User Data"; // Update with your path
-            String profileDir = "Profile 1"; // Update with your profile directory name
-            options.addArguments("--user-data-dir=" + userDataDir);
-            options.addArguments("--profile-directory=" + profileDir);
-
-            // Add standard options
+            // Basic options
             options.addArguments("--start-maximized");
             options.addArguments("--remote-allow-origins=*");
-            options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
 
-            // Disable notifications, password saving prompts, and other popups
+            // Disable automation flags
+            options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
+            options.setExperimentalOption("useAutomationExtension", false);
+
+            // IMPORTANT: Do not use existing profile for now as it's causing issues
+            // We'll use a fresh Chrome instance instead
+
+            // Disable notifications and popups
             options.addArguments("--disable-notifications");
             options.addArguments("--disable-popup-blocking");
 
-            // Uncomment the line below if you want to run headless (no browser window)
-            // options.addArguments("--headless=new");
+            // Set additional options to avoid DevTools issues
+            options.addArguments("--no-sandbox");
+            options.addArguments("--disable-dev-shm-usage");
 
-            // Initialize and return the WebDriver
-            return new ChromeDriver(options);
+            System.out.println("Initializing Chrome Driver...");
+            WebDriver driver = new ChromeDriver(options);
+            System.out.println("Chrome Driver initialized successfully!");
+            return driver;
         } catch (Exception e) {
             System.out.println("Error setting up WebDriver: " + e.getMessage());
             e.printStackTrace();
