@@ -208,7 +208,9 @@ public class FormFiller {
             System.out.println("1. Selecting first dropdown (OB - OUTBOUND SUBJECT)...");
             if (clickMatSelectByTrigger(driver, "mat-select-4")) {
                 Thread.sleep(2000);
-                clickOptionById(driver, "mat-option-68");
+                if (clickOptionById(driver, "mat-option-68")) {
+                    closeDropdown(driver); // Close dropdown after selection
+                }
             }
             Thread.sleep(2000);
 
@@ -216,7 +218,9 @@ public class FormFiller {
             System.out.println("2. Selecting second dropdown (AB - AG/BIO COUNTERMEASURES)...");
             if (clickMatSelectByTrigger(driver, "mat-select-10")) {
                 Thread.sleep(2000);
-                clickOptionById(driver, "mat-option-549");
+                if (clickOptionById(driver, "mat-option-549")) {
+                    closeDropdown(driver); // Close dropdown after selection
+                }
             }
             Thread.sleep(2000);
 
@@ -224,7 +228,9 @@ public class FormFiller {
             System.out.println("3. Selecting third dropdown (0 - NO NOTIFICATION)...");
             if (clickMatSelectByTrigger(driver, "mat-select-6")) {
                 Thread.sleep(2000);
-                clickOptionById(driver, "mat-option-238");
+                if (clickOptionById(driver, "mat-option-238")) {
+                    closeDropdown(driver); // Close dropdown after selection
+                }
             }
             Thread.sleep(2000);
 
@@ -233,7 +239,9 @@ public class FormFiller {
             if (clickMatSelectByTrigger(driver, "mat-select-12")) {
                 Thread.sleep(2000);
                 int randomOption = 253 + random.nextInt(6); // Random between 253-258
-                clickOptionById(driver, "mat-option-" + randomOption);
+                if (clickOptionById(driver, "mat-option-" + randomOption)) {
+                    closeDropdown(driver); // Close dropdown after selection
+                }
             }
             Thread.sleep(2000);
 
@@ -241,7 +249,9 @@ public class FormFiller {
             System.out.println("5. Selecting fifth dropdown (0 - NOT ON PRIMARY)...");
             if (clickMatSelectByTrigger(driver, "mat-select-8")) {
                 Thread.sleep(2000);
-                clickOptionById(driver, "mat-option-242");
+                if (clickOptionById(driver, "mat-option-242")) {
+                    closeDropdown(driver); // Close dropdown after selection
+                }
             }
             Thread.sleep(2000);
 
@@ -254,7 +264,9 @@ public class FormFiller {
             System.out.println("7. Selecting Y/N dropdown...");
             if (clickMatSelectByTrigger(driver, "mat-select-0")) {
                 Thread.sleep(2000);
-                clickOptionById(driver, "mat-option-2");
+                if (clickOptionById(driver, "mat-option-2")) {
+                    closeDropdown(driver); // Close dropdown after selection
+                }
             }
             Thread.sleep(2000);
 
@@ -263,7 +275,9 @@ public class FormFiller {
             if (clickMatSelectByTrigger(driver, "mat-select-2")) {
                 Thread.sleep(2000);
                 int randomHeight = 8 + random.nextInt(20);
-                clickOptionById(driver, "mat-option-" + randomHeight);
+                if (clickOptionById(driver, "mat-option-" + randomHeight)) {
+                    closeDropdown(driver); // Close dropdown after selection
+                }
             }
             Thread.sleep(2000);
 
@@ -275,81 +289,125 @@ public class FormFiller {
 
             // Add Sex
             System.out.println("10. Adding sex...");
-            if (clickButtonOriginal(driver, "Add Sex")) {
-                Thread.sleep(2000);
+            if (clickAddButton(driver, "Add Sex")) {
+                Thread.sleep(3000); // Wait longer for new dropdown to appear
                 String sexOption = random.nextBoolean() ? "630" : "631"; // F or M
-                clickNewestMatOption(driver, sexOption);
+                if (clickLatestDropdown(driver)) {
+                    Thread.sleep(2000);
+                    if (clickOptionById(driver, "mat-option-" + sexOption)) {
+                        closeDropdown(driver);
+                    }
+                }
             }
             Thread.sleep(2000);
 
             // Add Race
             System.out.println("11. Adding race...");
-            if (clickButtonOriginal(driver, "Add Race")) {
-                Thread.sleep(2000);
+            if (clickAddButton(driver, "Add Race")) {
+                Thread.sleep(3000); // Wait longer for new dropdown to appear
                 int raceOption = 594 + random.nextInt(6); // Random between 594-599
-                clickNewestMatOption(driver, String.valueOf(raceOption));
+                if (clickLatestDropdown(driver)) {
+                    Thread.sleep(2000);
+                    if (clickOptionById(driver, "mat-option-" + raceOption)) {
+                        closeDropdown(driver);
+                    }
+                }
             }
             Thread.sleep(2000);
 
             // Add Eye Color
             System.out.println("12. Adding eye color...");
-            if (clickButtonOriginal(driver, "Add Eye Color")) {
-                Thread.sleep(2000);
+            if (clickAddButton(driver, "Add Eye Color")) {
+                Thread.sleep(3000); // Wait longer for new dropdown to appear
                 int eyeOption = 600 + random.nextInt(12); // Random between 600-611
-                clickNewestMatOption(driver, String.valueOf(eyeOption));
+                if (clickLatestDropdown(driver)) {
+                    Thread.sleep(2000);
+                    if (clickOptionById(driver, "mat-option-" + eyeOption)) {
+                        closeDropdown(driver);
+                    }
+                }
             }
             Thread.sleep(2000);
 
             // Add Hair Color
             System.out.println("13. Adding hair color...");
-            if (clickButtonOriginal(driver, "Add Hair Color")) {
-                Thread.sleep(2000);
+            if (clickAddButton(driver, "Add Hair Color")) {
+                Thread.sleep(3000); // Wait longer for new dropdown to appear
                 int hairOption = 612 + random.nextInt(15); // Random between 612-626
-                clickNewestMatOption(driver, String.valueOf(hairOption));
+                if (clickLatestDropdown(driver)) {
+                    Thread.sleep(2000);
+                    if (clickOptionById(driver, "mat-option-" + hairOption)) {
+                        closeDropdown(driver);
+                    }
+                }
             }
             Thread.sleep(2000);
 
             // Add Name (KEEP ORIGINAL WORKING APPROACH)
             System.out.println("14. Adding name...");
-            if (clickButtonOriginal(driver, "Add Name")) {
-                Thread.sleep(2000);
+            if (clickAddButton(driver, "Add Name")) {
+                Thread.sleep(3000); // Wait for input fields to appear
                 fillInputByIdOriginal(driver, "mat-input-2", data.getLastName());
+                Thread.sleep(1000);
                 fillInputByIdOriginal(driver, "mat-input-3", data.getFirstName());
             }
             Thread.sleep(2000);
 
             // Add DOB (KEEP ORIGINAL WORKING APPROACH)
             System.out.println("15. Adding DOB...");
-            if (clickButtonOriginal(driver, "Add DOB")) {
-                Thread.sleep(2000);
+            if (clickAddButton(driver, "Add DOB")) {
+                Thread.sleep(3000); // Wait for input field to appear
                 fillInputByIdOriginal(driver, "mat-input-11", data.getDob());
             }
             Thread.sleep(2000);
 
             // Add Citizenship
             System.out.println("16. Adding citizenship...");
-            if (clickButtonOriginal(driver, "Add Citizenship")) {
-                Thread.sleep(2000);
-                clickNewestMatOption(driver, "1260"); // USA
+            if (clickAddButton(driver, "Add Citizenship")) {
+                Thread.sleep(3000); // Wait for dropdown to appear
+                if (clickLatestDropdown(driver)) {
+                    Thread.sleep(2000);
+                    if (clickOptionById(driver, "mat-option-1260")) { // USA
+                        closeDropdown(driver);
+                    }
+                }
             }
             Thread.sleep(2000);
 
             // Add Passport
             System.out.println("17. Adding passport...");
-            if (clickButtonOriginal(driver, "Add Passport")) {
-                Thread.sleep(2000);
+            if (clickAddButton(driver, "Add Passport")) {
+                Thread.sleep(3000); // Wait for fields to appear
+
                 // Select passport type (P - Regular)
-                clickNewestMatOption(driver, "1518");
+                if (clickLatestDropdown(driver)) {
+                    Thread.sleep(2000);
+                    if (clickOptionById(driver, "mat-option-1518")) {
+                        closeDropdown(driver);
+                    }
+                }
                 Thread.sleep(1000);
+
                 // Fill passport number
                 fillInputByIdOriginal(driver, "mat-input-19", data.getPassportNumber());
                 Thread.sleep(1000);
-                // Select passport country (USA)
-                clickNewestMatOption(driver, "1520");
+
+                // Select passport country (USA) - need to find the second dropdown
+                List<WebElement> allSelects = driver.findElements(By.tagName("mat-select"));
+                if (allSelects.size() >= 2) {
+                    WebElement countrySelect = allSelects.get(allSelects.size() - 1); // Get last dropdown
+                    highlightAndClick(driver, countrySelect);
+                    Thread.sleep(2000);
+                    if (clickOptionById(driver, "mat-option-1520")) {
+                        closeDropdown(driver);
+                    }
+                }
                 Thread.sleep(1000);
+
                 // Fill passport issue date
                 fillInputByIdOriginal(driver, "mat-input-20", data.getPassportIssueDate());
                 Thread.sleep(1000);
+
                 // Fill passport expiry date
                 fillInputByIdOriginal(driver, "mat-input-21", data.getPassportExpiryDate());
             }
@@ -357,28 +415,35 @@ public class FormFiller {
 
             // Add A#
             System.out.println("18. Adding A#...");
-            if (clickButtonOriginal(driver, "Add A#")) {
-                Thread.sleep(2000);
+            if (clickAddButton(driver, "Add A#")) {
+                Thread.sleep(3000); // Wait for input field to appear
                 fillInputByIdOriginal(driver, "mat-input-22", data.getaNumber());
             }
             Thread.sleep(2000);
 
             // Add Driver's License
             System.out.println("19. Adding driver's license...");
-            if (clickButtonOriginal(driver, "Add Driver's License")) {
-                Thread.sleep(2000);
+            if (clickAddButton(driver, "Add Driver's License")) {
+                Thread.sleep(3000); // Wait for fields to appear
+
                 fillInputByIdOriginal(driver, "mat-input-23", data.getDriverLicense());
                 Thread.sleep(1000);
-                // Select random US state
-                int stateOption = 1774 + random.nextInt(62); // Random US state
-                clickNewestMatOption(driver, String.valueOf(stateOption));
+
+                // Select random US state - find the newest dropdown
+                if (clickLatestDropdown(driver)) {
+                    Thread.sleep(2000);
+                    int stateOption = 1774 + random.nextInt(62); // Random US state
+                    if (clickOptionById(driver, "mat-option-" + stateOption)) {
+                        closeDropdown(driver);
+                    }
+                }
             }
             Thread.sleep(2000);
 
             // Add SSN
             System.out.println("20. Adding SSN...");
-            if (clickButtonOriginal(driver, "Add SSN")) {
-                Thread.sleep(2000);
+            if (clickAddButton(driver, "Add SSN")) {
+                Thread.sleep(3000); // Wait for input field to appear
                 // Find the newest input field for SSN
                 List<WebElement> allInputs = driver.findElements(By.xpath("//input[@class and contains(@class, 'mat-input-element')]"));
                 if (!allInputs.isEmpty()) {
@@ -513,6 +578,169 @@ public class FormFiller {
 
         } catch (Exception e) {
             System.out.println("Failed to click option " + optionNumber + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Close any open dropdown by clicking outside or pressing ESC
+     */
+    private static void closeDropdown(WebDriver driver) {
+        try {
+            // Click on body to close any open dropdowns
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript("document.body.click();");
+            Thread.sleep(500);
+        } catch (Exception e) {
+            System.out.println("Could not close dropdown: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Improved button clicking specifically for "Add X" buttons
+     */
+    private static boolean clickAddButton(WebDriver driver, String buttonText) {
+        try {
+            System.out.println("🎯 Looking for Add button: " + buttonText);
+
+            // First, list all buttons to see what's available
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript(
+                    "console.log('=== AVAILABLE BUTTONS ==='); " +
+                            "var buttons = document.querySelectorAll('button'); " +
+                            "for (var i = 0; i < Math.min(buttons.length, 10); i++) { " +
+                            "  console.log('Button ' + i + ': ' + buttons[i].textContent.trim()); " +
+                            "}"
+            );
+
+            // Method 1: Direct text search
+            try {
+                WebElement button = driver.findElement(By.xpath("//button[contains(text(), '" + buttonText + "')]"));
+                // Highlight the button
+                js.executeScript("arguments[0].style.border = '3px solid red';", button);
+                js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", button);
+                Thread.sleep(1000);
+
+                button.click();
+
+                // Remove highlight
+                js.executeScript("arguments[0].style.border = '';", button);
+                System.out.println("✅ Successfully clicked Add button: " + buttonText);
+                return true;
+
+            } catch (Exception e) {
+                System.out.println("Direct text search failed: " + e.getMessage());
+            }
+
+            // Method 2: Look for span inside button
+            try {
+                WebElement button = driver.findElement(By.xpath("//button//span[contains(text(), '" + buttonText + "')]/ancestor::button"));
+                // Highlight the button
+                js.executeScript("arguments[0].style.border = '3px solid red';", button);
+                js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", button);
+                Thread.sleep(1000);
+
+                button.click();
+
+                // Remove highlight
+                js.executeScript("arguments[0].style.border = '';", button);
+                System.out.println("✅ Successfully clicked Add button by span: " + buttonText);
+                return true;
+
+            } catch (Exception e) {
+                System.out.println("Span search failed: " + e.getMessage());
+            }
+
+            // Method 3: JavaScript search through all buttons
+            try {
+                Boolean result = (Boolean) js.executeScript(
+                        "var buttons = document.querySelectorAll('button'); " +
+                                "for (var i = 0; i < buttons.length; i++) { " +
+                                "  var buttonText = buttons[i].textContent.trim(); " +
+                                "  if (buttonText.includes('" + buttonText + "')) { " +
+                                "    console.log('Found button: ' + buttonText); " +
+                                "    buttons[i].style.border = '3px solid red'; " +
+                                "    buttons[i].scrollIntoView({behavior: 'smooth', block: 'center'}); " +
+                                "    setTimeout(function() { " +
+                                "      buttons[i].click(); " +
+                                "      buttons[i].style.border = ''; " +
+                                "    }, 1000); " +
+                                "    return true; " +
+                                "  } " +
+                                "} " +
+                                "return false;"
+                );
+
+                if (result != null && result) {
+                    Thread.sleep(1500); // Wait for the JavaScript timeout
+                    System.out.println("✅ Successfully clicked Add button using JavaScript: " + buttonText);
+                    return true;
+                }
+            } catch (Exception e) {
+                System.out.println("JavaScript search failed: " + e.getMessage());
+            }
+
+            System.out.println("❌ Could not find Add button: " + buttonText);
+            return false;
+
+        } catch (Exception e) {
+            System.out.println("❌ Error clicking Add button " + buttonText + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Click the most recently added/last mat-select dropdown
+     */
+    private static boolean clickLatestDropdown(WebDriver driver) {
+        try {
+            System.out.println("🎯 Looking for latest dropdown...");
+
+            List<WebElement> allSelects = driver.findElements(By.tagName("mat-select"));
+            System.out.println("Found " + allSelects.size() + " total mat-select elements");
+
+            if (!allSelects.isEmpty()) {
+                WebElement latestSelect = allSelects.get(allSelects.size() - 1);
+                return highlightAndClick(driver, latestSelect);
+            } else {
+                System.out.println("No mat-select elements found");
+                return false;
+            }
+
+        } catch (Exception e) {
+            System.out.println("❌ Error clicking latest dropdown: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Highlight element and click it
+     */
+    private static boolean highlightAndClick(WebDriver driver, WebElement element) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Highlight
+            js.executeScript("arguments[0].style.border = '3px solid red';", element);
+            js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", element);
+            Thread.sleep(1000);
+
+            // Try to click trigger first, then element itself
+            try {
+                WebElement trigger = element.findElement(By.className("mat-select-trigger"));
+                trigger.click();
+                System.out.println("✅ Clicked mat-select-trigger");
+            } catch (Exception e) {
+                element.click();
+                System.out.println("✅ Clicked mat-select directly");
+            }
+
+            // Remove highlight
+            js.executeScript("arguments[0].style.border = '';", element);
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("❌ Error highlighting and clicking element: " + e.getMessage());
             return false;
         }
     }
