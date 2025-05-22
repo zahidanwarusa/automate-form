@@ -96,7 +96,7 @@ public class FormFiller {
 
             // Wait for search results to load
             System.out.println("Waiting for search results to load...");
-            Thread.sleep(2000); // Wait 8 seconds for search to complete
+            Thread.sleep(8000); // Wait 8 seconds for search to complete
 
             // Check if there's a loading indicator and wait for it to disappear
             try {
@@ -115,6 +115,11 @@ public class FormFiller {
             JavascriptExecutor js = (JavascriptExecutor) driver;
             js.executeScript("window.scrollBy(0, 300);");
             Thread.sleep(2000);
+
+            // Store the current window handle before clicking the button
+            String originalWindow = driver.getWindowHandle();
+            System.out.println("Original window handle: " + originalWindow);
+            System.out.println("Current windows before click: " + driver.getWindowHandles().size());
 
             // Now look for the Create TECS Lookout button
             System.out.println("Looking for Create TECS Lookout button...");
@@ -165,8 +170,34 @@ public class FormFiller {
                 return false;
             }
 
-            // Wait for second page to start loading
-            Thread.sleep(3000);
+            // Wait for new tab/window to open
+            System.out.println("Waiting for new tab to open...");
+            Thread.sleep(5000);
+
+            // Check if a new window/tab was opened
+            if (driver.getWindowHandles().size() > 1) {
+                System.out.println("New tab detected! Switching to new tab...");
+
+                // Switch to the new tab
+                for (String windowHandle : driver.getWindowHandles()) {
+                    if (!windowHandle.equals(originalWindow)) {
+                        driver.switchTo().window(windowHandle);
+                        System.out.println("Switched to new tab: " + windowHandle);
+                        break;
+                    }
+                }
+
+                // Wait for new tab to load
+                Thread.sleep(3000);
+
+                System.out.println("New tab URL: " + driver.getCurrentUrl());
+                System.out.println("New tab title: " + driver.getTitle());
+
+            } else {
+                System.out.println("No new tab opened, staying in current tab");
+                System.out.println("Current URL: " + driver.getCurrentUrl());
+                System.out.println("Current title: " + driver.getTitle());
+            }
 
             System.out.println("First page completed successfully!");
             return true;
@@ -187,9 +218,30 @@ public class FormFiller {
         try {
             System.out.println("Filling out second page...");
 
-            // Wait for second page to load
-            Thread.sleep(10000);
-            System.out.println("Second page loaded, starting form filling...");
+            // Wait for second page to load and verify elements exist
+            if (!waitForSecondPageElements(driver)) {
+                System.out.println("Second page elements not found, but continuing...");
+            }
+
+            // Get current page info
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            System.out.println("=== SECOND PAGE DEBUG INFO ===");
+            System.out.println("URL: " + driver.getCurrentUrl());
+            System.out.println("Title: " + driver.getTitle());
+
+            Object matSelectCount = js.executeScript("return document.querySelectorAll('mat-select').length;");
+            System.out.println("Mat-select elements found: " + matSelectCount);
+
+            // List all mat-select elements with their IDs
+            js.executeScript(
+                    "console.log('=== ALL MAT-SELECT ELEMENTS ==='); " +
+                            "var selects = document.querySelectorAll('mat-select'); " +
+                            "for (var i = 0; i < selects.length; i++) { " +
+                            "  console.log('Index ' + i + ': ID=' + selects[i].id + ', Classes=' + selects[i].className.substring(0,50)); " +
+                            "}"
+            );
+            System.out.println("Check browser console for mat-select element details");
+            System.out.println("==============================");
 
             // First dropdown - mat-select-4 with option mat-option-68 (OB - OUTBOUND SUBJECT)
             System.out.println("1. Selecting first dropdown (OB - OUTBOUND SUBJECT)...");
@@ -404,38 +456,155 @@ public class FormFiller {
     }
 
     /**
-     * Click element using XPath (proven to work in console)
+     * Wait for second page elements to load and verify they exist
+     */
+    private static boolean waitForSecondPageElements(WebDriver driver) {
+        System.out.println("Waiting for second page elements to load...");
+
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+
+        // Wait up to 30 seconds for elements to appear
+        for (int i = 0; i < 30; i++) {
+            try {
+                Thread.sleep(1000);
+
+                Object matSelectCount = js.executeScript("return document.querySelectorAll('mat-select').length;");
+                System.out.println("Attempt " + (i+1) + ": Found " + matSelectCount + " mat-select elements");
+
+                // Check for specific elements we need
+                Boolean hasRequiredElements = (Boolean) js.executeScript(
+                        "return $x(\"//*[@id='mat-select-4']\").length > 0 || " +
+                                "       document.querySelectorAll('mat-select').length >= 5;"
+                );
+
+                if (hasRequiredElements != null && hasRequiredElements) {
+                    System.out.println("Required elements found after " + (i+1) + " seconds");
+                    return true;
+                }
+
+            } catch (Exception e) {
+                System.out.println("Error during wait: " + e.getMessage());
+            }
+        }
+
+        System.out.println("Timeout waiting for second page elements");
+        return false;
+    }
+
+    /**
+     * Click element using XPath with enhanced debugging and fallback strategies
      */
     private static boolean clickElementByXPath(WebDriver driver, String xpath) {
         try {
             System.out.println("Clicking element with XPath: " + xpath);
 
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-            WebElement element = wait.until(ExpectedConditions.elementToBeClickable(By.xpath(xpath)));
-
-            // Scroll to element first
+            // First, let's check if we're on the right page
             JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", element);
-            Thread.sleep(1000);
+            System.out.println("Current URL: " + driver.getCurrentUrl());
+            System.out.println("Page title: " + driver.getTitle());
 
-            element.click();
-            System.out.println("Successfully clicked element");
-            return true;
+            // Check if the element exists at all
+            Object elementCount = js.executeScript("return $x(\"" + xpath + "\").length;");
+            System.out.println("Elements found by JavaScript: " + elementCount);
 
-        } catch (Exception e) {
-            System.out.println("Failed to click element with XPath " + xpath + ": " + e.getMessage());
+            if (elementCount.equals(0L)) {
+                System.out.println("Element not found by JavaScript either. Checking page state...");
 
-            // Fallback: try JavaScript click
-            try {
-                JavascriptExecutor js = (JavascriptExecutor) driver;
-                WebElement element = driver.findElement(By.xpath(xpath));
-                js.executeScript("arguments[0].click();", element);
-                System.out.println("Successfully clicked element using JavaScript");
-                return true;
-            } catch (Exception jsEx) {
-                System.out.println("JavaScript click also failed: " + jsEx.getMessage());
+                // Debug what elements are actually on the page
+                Object matSelectCount = js.executeScript("return document.querySelectorAll('mat-select').length;");
+                System.out.println("Total mat-select elements on page: " + matSelectCount);
+
+                // List all mat-select IDs
+                js.executeScript(
+                        "var selects = document.querySelectorAll('mat-select'); " +
+                                "for (var i = 0; i < selects.length; i++) { " +
+                                "  console.log('mat-select ' + i + ': id=' + selects[i].id + ', classes=' + selects[i].className); " +
+                                "}"
+                );
+
                 return false;
             }
+
+            // If element exists, try different click strategies
+
+            // Strategy 1: Try clicking the mat-select directly
+            try {
+                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+                WebElement element = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath(xpath)));
+
+                // Scroll to element first
+                js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", element);
+                Thread.sleep(1000);
+
+                element.click();
+                System.out.println("Successfully clicked element directly");
+                return true;
+
+            } catch (Exception e) {
+                System.out.println("Direct click failed: " + e.getMessage());
+            }
+
+            // Strategy 2: Click the span inside (like console shows)
+            try {
+                String spanXpath = xpath + "//span[contains(@class, 'mat-select-placeholder') or contains(@class, 'mat-select-value')]";
+                WebElement spanElement = driver.findElement(By.xpath(spanXpath));
+                spanElement.click();
+                System.out.println("Successfully clicked span inside mat-select");
+                return true;
+            } catch (Exception e) {
+                System.out.println("Span click failed: " + e.getMessage());
+            }
+
+            // Strategy 3: JavaScript click on the exact center point (like console analysis)
+            try {
+                Boolean jsResult = (Boolean) js.executeScript(
+                        "var element = $x(\"" + xpath + "\")[0]; " +
+                                "if (element) { " +
+                                "  var rect = element.getBoundingClientRect(); " +
+                                "  var centerX = rect.left + rect.width / 2; " +
+                                "  var centerY = rect.top + rect.height / 2; " +
+                                "  var clickableElement = document.elementFromPoint(centerX, centerY); " +
+                                "  if (clickableElement) { " +
+                                "    clickableElement.click(); " +
+                                "    return true; " +
+                                "  } " +
+                                "} " +
+                                "return false;"
+                );
+
+                if (jsResult != null && jsResult) {
+                    System.out.println("Successfully clicked using center point strategy");
+                    return true;
+                }
+            } catch (Exception e) {
+                System.out.println("Center point click failed: " + e.getMessage());
+            }
+
+            // Strategy 4: Force JavaScript click on the mat-select itself
+            try {
+                Boolean jsResult = (Boolean) js.executeScript(
+                        "var element = $x(\"" + xpath + "\")[0]; " +
+                                "if (element) { " +
+                                "  element.click(); " +
+                                "  return true; " +
+                                "} " +
+                                "return false;"
+                );
+
+                if (jsResult != null && jsResult) {
+                    System.out.println("Successfully clicked using JavaScript direct");
+                    return true;
+                }
+            } catch (Exception e) {
+                System.out.println("JavaScript direct click failed: " + e.getMessage());
+            }
+
+            System.out.println("All click strategies failed for: " + xpath);
+            return false;
+
+        } catch (Exception e) {
+            System.out.println("Error in clickElementByXPath: " + e.getMessage());
+            return false;
         }
     }
 
