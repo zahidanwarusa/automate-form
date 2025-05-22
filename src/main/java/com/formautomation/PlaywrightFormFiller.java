@@ -298,27 +298,40 @@ public class RobustPlaywrightFormFiller {
         try {
             System.out.println("=== FILLING SECOND PAGE ===");
 
-            // Wait for Angular Material page to load
+            // Wait for page to load
             page.waitForLoadState(LoadState.NETWORKIDLE);
             page.waitForTimeout(5000);
 
             // Debug: Print page info
             printPageInfo(page, "Second Page");
 
-            // Wait for Angular Material components
-            page.waitForSelector("mat-form-field, mat-select", new Page.WaitForSelectorOptions().setTimeout(30000));
-
-            // Take screenshot
+            // Take screenshot to see what we're working with
             page.screenshot(new Page.ScreenshotOptions().setPath(java.nio.file.Paths.get("second-page-loaded.png")));
 
-            // Handle dropdowns by position and text
-            handleDropdowns(page);
+            // Check if we need to navigate to the form creation page
+            if (!page.url().contains("tecs") && !page.url().contains("lookout")) {
+                System.out.println("Looking for form creation link on search results page...");
 
-            // Fill remarks
-            fillRemarks(page);
+                // Look for "Create TECS Lookout" or similar button on results page
+                if (findAndClickFormCreationButton(page)) {
+                    System.out.println("Navigated to form creation page");
+                    page.waitForLoadState(LoadState.NETWORKIDLE);
+                    page.waitForTimeout(3000);
+                    printPageInfo(page, "Form Creation Page");
+                    page.screenshot(new Page.ScreenshotOptions().setPath(java.nio.file.Paths.get("form-creation-page.png")));
+                } else {
+                    System.out.println("Could not find form creation button, working with current page...");
+                }
+            }
 
-            // Handle Add buttons
-            handleAddButtons(page, data);
+            // Try to handle the form based on actual page structure
+            if (hasAngularMaterialComponents(page)) {
+                System.out.println("Found Angular Material components, using Material approach...");
+                handleAngularMaterialForm(page, data);
+            } else {
+                System.out.println("No Angular Material found, using generic form approach...");
+                handleGenericForm(page, data);
+            }
 
             System.out.println("Second page completed successfully!");
             page.screenshot(new Page.ScreenshotOptions().setPath(java.nio.file.Paths.get("second-page-completed.png")));
@@ -332,9 +345,254 @@ public class RobustPlaywrightFormFiller {
         }
     }
 
+    private static boolean findAndClickFormCreationButton(Page page) {
+        try {
+            // List all buttons and their text to find the right one
+            Object buttonInfo = page.evaluate(
+                    "() => {" +
+                            "  const buttons = Array.from(document.querySelectorAll('button, a, input[type=\"button\"]'));" +
+                            "  return buttons.map((btn, i) => ({" +
+                            "    index: i," +
+                            "    text: (btn.textContent || btn.value || '').trim()," +
+                            "    href: btn.href || ''," +
+                            "    className: btn.className," +
+                            "    id: btn.id" +
+                            "  }));" +
+                            "}"
+            );
+
+            System.out.println("Available buttons/links:");
+            System.out.println(buttonInfo);
+
+            // Try different selectors for form creation
+            String[] formCreationSelectors = {
+                    "text=Create TECS Lookout",
+                    "text=Add TECS",
+                    "text=New Lookout",
+                    "text=Create Lookout",
+                    "text=Add Lookout",
+                    "[href*='lookout']",
+                    "[href*='tecs']",
+                    "[href*='create']",
+                    "[href*='add']"
+            };
+
+            for (String selector : formCreationSelectors) {
+                try {
+                    Locator element = page.locator(selector);
+                    if (element.count() > 0) {
+                        element.first().click();
+                        System.out.println("Clicked form creation element with selector: " + selector);
+                        return true;
+                    }
+                } catch (Exception e) {
+                    // Try next selector
+                }
+            }
+
+            // Try JavaScript approach to find any relevant links
+            Object result = page.evaluate(
+                    "() => {" +
+                            "  const elements = Array.from(document.querySelectorAll('a, button'));" +
+                            "  for (let el of elements) {" +
+                            "    const text = (el.textContent || '').toLowerCase();" +
+                            "    const href = (el.href || '').toLowerCase();" +
+                            "    if ((text.includes('create') || text.includes('add') || text.includes('new')) &&" +
+                            "        (text.includes('lookout') || text.includes('tecs') || href.includes('lookout') || href.includes('tecs'))) {" +
+                            "      el.click();" +
+                            "      return 'clicked: ' + text;" +
+                            "    }" +
+                            "  }" +
+                            "  return 'no form creation button found';" +
+                            "}"
+            );
+
+            System.out.println("JavaScript search result: " + result);
+            return result.toString().startsWith("clicked:");
+
+        } catch (Exception e) {
+            System.out.println("Error finding form creation button: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private static boolean hasAngularMaterialComponents(Page page) {
+        try {
+            Object matCount = page.evaluate("() => document.querySelectorAll('mat-select, mat-form-field').length");
+            return Integer.parseInt(matCount.toString()) > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static void handleAngularMaterialForm(Page page, PersonData data) {
+        try {
+            System.out.println("Handling Angular Material form...");
+
+            // Wait for Angular Material components
+            page.waitForSelector("mat-form-field, mat-select", new Page.WaitForSelectorOptions().setTimeout(10000));
+
+            // Handle dropdowns
+            handleDropdowns(page);
+
+            // Fill remarks
+            fillRemarks(page);
+
+            // Handle Add buttons
+            handleAddButtons(page, data);
+
+        } catch (Exception e) {
+            System.out.println("Error in Angular Material form handling: " + e.getMessage());
+        }
+    }
+
+    private static void handleGenericForm(Page page, PersonData data) {
+        try {
+            System.out.println("Handling generic form...");
+
+            // List all form elements to understand the structure
+            Object formElements = page.evaluate(
+                    "() => {" +
+                            "  const inputs = Array.from(document.querySelectorAll('input, select, textarea'));" +
+                            "  return inputs.slice(0, 20).map((el, i) => ({" + // First 20 elements
+                            "    index: i," +
+                            "    tag: el.tagName," +
+                            "    type: el.type," +
+                            "    name: el.name," +
+                            "    id: el.id," +
+                            "    placeholder: el.placeholder," +
+                            "    value: el.value," +
+                            "    className: el.className.substring(0, 50)" + // Truncate long class names
+                            "  }));" +
+                            "}"
+            );
+
+            System.out.println("Form elements found:");
+            System.out.println(formElements);
+
+            // Try to fill any textarea with remarks
+            try {
+                Locator textareas = page.locator("textarea");
+                if (textareas.count() > 0) {
+                    textareas.first().fill("Automated test entry - Playwright generic form");
+                    System.out.println("Filled textarea with remarks");
+                }
+            } catch (Exception e) {
+                System.out.println("Could not fill textarea: " + e.getMessage());
+            }
+
+            // Try to find and fill specific form fields by common names/ids
+            String[] commonFieldMappings = {
+                    "lastName", "last_name", "surname",
+                    "firstName", "first_name", "given_name",
+                    "dob", "date_of_birth", "birth_date",
+                    "passport", "passport_number",
+                    "weight", "height"
+            };
+
+            for (String fieldName : commonFieldMappings) {
+                try {
+                    Locator field = page.locator("input[name*='" + fieldName + "'], input[id*='" + fieldName + "']");
+                    if (field.count() > 0) {
+                        String value = getValueForField(fieldName, data);
+                        if (value != null) {
+                            field.first().fill(value);
+                            System.out.println("Filled field " + fieldName + " with: " + value);
+                        }
+                    }
+                } catch (Exception e) {
+                    // Continue with next field
+                }
+            }
+
+            // Look for dropdown/select elements
+            try {
+                Locator selects = page.locator("select");
+                int selectCount = selects.count();
+                System.out.println("Found " + selectCount + " select dropdowns");
+
+                for (int i = 0; i < Math.min(selectCount, 5); i++) {
+                    try {
+                        Locator select = selects.nth(i);
+
+                        // Get options for this select
+                        Object options = page.evaluate(
+                                "(selectIndex) => {" +
+                                        "  const select = document.querySelectorAll('select')[selectIndex];" +
+                                        "  if (!select) return [];" +
+                                        "  return Array.from(select.options).map(opt => opt.text.trim()).slice(0, 5);" + // First 5 options
+                                        "}", i
+                        );
+
+                        System.out.println("Select " + i + " options: " + options);
+
+                        // Try to select a reasonable option (not empty or default)
+                        Object optionsList = (Object[]) options;
+                        if (optionsList != null && ((Object[]) optionsList).length > 1) {
+                            select.selectOption(((Object[]) optionsList)[1].toString()); // Select second option
+                            System.out.println("Selected option in dropdown " + i);
+                        }
+
+                    } catch (Exception e) {
+                        System.out.println("Could not handle select " + i + ": " + e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Error handling select dropdowns: " + e.getMessage());
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error in generic form handling: " + e.getMessage());
+        }
+    }
+
+    private static String getValueForField(String fieldName, PersonData data) {
+        switch (fieldName.toLowerCase()) {
+            case "lastname":
+            case "last_name":
+            case "surname":
+                return data.getLastName();
+            case "firstname":
+            case "first_name":
+            case "given_name":
+                return data.getFirstName();
+            case "dob":
+            case "date_of_birth":
+            case "birth_date":
+                return data.getDob();
+            case "passport":
+            case "passport_number":
+                return data.getPassportNumber();
+            case "weight":
+                return data.getWeight();
+            case "height":
+                return data.getHeight();
+            default:
+                return null;
+        }
+    }
+
     private static void handleDropdowns(Page page) {
         System.out.println("Handling dropdowns...");
 
+        try {
+            // First check if we have mat-select elements
+            int matSelectCount = Integer.parseInt(page.evaluate("() => document.querySelectorAll('mat-select').length").toString());
+
+            if (matSelectCount > 0) {
+                System.out.println("Found " + matSelectCount + " mat-select elements");
+                handleMatSelectDropdowns(page);
+            } else {
+                System.out.println("No mat-select elements found, looking for regular select elements");
+                handleRegularSelectDropdowns(page);
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error in dropdown handling: " + e.getMessage());
+        }
+    }
+
+    private static void handleMatSelectDropdowns(Page page) {
         String[][] dropdownOptions = {
                 {"0", "OB - OUTBOUND SUBJECT"},
                 {"1", "AB - AG/BIO COUNTERMEASURES"},
@@ -348,7 +606,7 @@ public class RobustPlaywrightFormFiller {
                 int index = Integer.parseInt(option[0]);
                 String optionText = option[1];
 
-                System.out.println("Selecting dropdown " + index + " with option: " + optionText);
+                System.out.println("Selecting mat-select " + index + " with option: " + optionText);
 
                 // Click dropdown
                 page.locator("mat-select").nth(index).click();
@@ -361,8 +619,45 @@ public class RobustPlaywrightFormFiller {
                 System.out.println("Successfully selected: " + optionText);
 
             } catch (Exception e) {
-                System.out.println("Failed to select dropdown " + option[0] + ": " + e.getMessage());
+                System.out.println("Failed to select mat-select " + option[0] + ": " + e.getMessage());
             }
+        }
+    }
+
+    private static void handleRegularSelectDropdowns(Page page) {
+        try {
+            Locator selects = page.locator("select");
+            int selectCount = selects.count();
+            System.out.println("Found " + selectCount + " regular select elements");
+
+            for (int i = 0; i < Math.min(selectCount, 5); i++) {
+                try {
+                    Locator select = selects.nth(i);
+
+                    // Get the select element's name/id for context
+                    String selectInfo = select.evaluate(
+                            "el => ({ name: el.name, id: el.id, className: el.className })"
+                    ).toString();
+                    System.out.println("Processing select " + i + ": " + selectInfo);
+
+                    // Get available options
+                    Object options = select.evaluate(
+                            "el => Array.from(el.options).map(opt => ({ value: opt.value, text: opt.text.trim() }))"
+                    );
+                    System.out.println("Options for select " + i + ": " + options);
+
+                    // Select a meaningful option (usually the second one if available)
+                    if (select.locator("option").count() > 1) {
+                        select.selectOption(select.locator("option").nth(1));
+                        System.out.println("Selected option in regular select " + i);
+                    }
+
+                } catch (Exception e) {
+                    System.out.println("Could not handle regular select " + i + ": " + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error handling regular selects: " + e.getMessage());
         }
     }
 
