@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Updated FormFiller using direct XPath selectors by ID (proven to work in console)
+ * Simplified FormFiller with element highlighting and better debugging
  */
 public class FormFiller {
     private static final Random random = new Random();
@@ -25,160 +25,54 @@ public class FormFiller {
      */
     public static boolean fillFirstPage(WebDriver driver, PersonData data) {
         try {
-            System.out.println("Filling out first page...");
+            System.out.println("=== FILLING FIRST PAGE ===");
 
             // Fill in last name
-            System.out.println("Filling last name: " + data.getLastName());
-            waitAndSendKeys(driver, By.id("lastName"), data.getLastName());
-
-            // Fill in first name
-            System.out.println("Filling first name: " + data.getFirstName());
-            waitAndSendKeys(driver, By.id("firstName"), data.getFirstName());
-
-            // Fill in DOB
-            System.out.println("Filling DOB: " + data.getDob());
-            waitAndSendKeys(driver, By.id("dob"), data.getDob());
-
-            // Click the SEARCH button first
-            System.out.println("Clicking SEARCH button...");
-            boolean searchClicked = false;
-
-            // Try multiple approaches to find and click the search button
-            try {
-                // Method 1: Try by button text
-                WebElement searchButton = driver.findElement(By.xpath("//button[contains(text(), 'Search')]"));
-                searchButton.click();
-                searchClicked = true;
-                System.out.println("Search button clicked using text search");
-            } catch (Exception e) {
-                System.out.println("Search by text failed: " + e.getMessage());
-            }
-
-            if (!searchClicked) {
-                try {
-                    // Method 2: Try by class name
-                    WebElement searchButton = driver.findElement(By.className("search-btn"));
-                    searchButton.click();
-                    searchClicked = true;
-                    System.out.println("Search button clicked using class name");
-                } catch (Exception e) {
-                    System.out.println("Search by class failed: " + e.getMessage());
-                }
-            }
-
-            if (!searchClicked) {
-                try {
-                    // Method 3: Try by CSS selector
-                    WebElement searchButton = driver.findElement(By.cssSelector("button.btn.btn-primary"));
-                    searchButton.click();
-                    searchClicked = true;
-                    System.out.println("Search button clicked using CSS selector");
-                } catch (Exception e) {
-                    System.out.println("Search by CSS failed: " + e.getMessage());
-                }
-            }
-
-            if (!searchClicked) {
-                try {
-                    // Method 4: Try by type submit
-                    WebElement searchButton = driver.findElement(By.xpath("//button[@type='submit']"));
-                    searchButton.click();
-                    searchClicked = true;
-                    System.out.println("Search button clicked using submit type");
-                } catch (Exception e) {
-                    System.out.println("Search by submit type failed: " + e.getMessage());
-                }
-            }
-
-            if (!searchClicked) {
-                System.out.println("Could not find or click search button. Trying to continue anyway...");
-            }
-
-            // Wait for search results to load
-            System.out.println("Waiting for search results to load...");
-            Thread.sleep(8000); // Wait 8 seconds for search to complete
-
-            // Check if there's a loading indicator and wait for it to disappear
-            try {
-                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
-                wait.until(ExpectedConditions.invisibilityOfElementLocated(
-                        By.cssSelector(".loading, .spinner, .loader, .mat-spinner")));
-                System.out.println("Loading completed");
-            } catch (Exception e) {
-                System.out.println("No loading indicator found or timeout waiting for loading to complete");
-            }
-
-            // Additional wait to ensure search results are fully loaded
-            Thread.sleep(3000);
-
-            // Scroll down to find the Create TECS Lookout button
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("window.scrollBy(0, 300);");
-            Thread.sleep(2000);
-
-            // Store the current window handle before clicking the button
-            String originalWindow = driver.getWindowHandle();
-            System.out.println("Original window handle: " + originalWindow);
-            System.out.println("Current windows before click: " + driver.getWindowHandles().size());
-
-            // Now look for the Create TECS Lookout button
-            System.out.println("Looking for Create TECS Lookout button...");
-            boolean createButtonClicked = false;
-
-            try {
-                // Method 1: Try by link text
-                WebElement createButton = driver.findElement(By.xpath("//a[contains(text(), 'Create TECS Lookout')]"));
-                js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", createButton);
-                Thread.sleep(2000);
-                createButton.click();
-                createButtonClicked = true;
-                System.out.println("Create TECS Lookout button clicked using link text");
-            } catch (Exception e) {
-                System.out.println("Create button by link text failed: " + e.getMessage());
-            }
-
-            if (!createButtonClicked) {
-                try {
-                    // Method 2: Try by class name
-                    WebElement createButton = driver.findElement(By.className("event-button"));
-                    js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", createButton);
-                    Thread.sleep(2000);
-                    createButton.click();
-                    createButtonClicked = true;
-                    System.out.println("Create TECS Lookout button clicked using class name");
-                } catch (Exception e) {
-                    System.out.println("Create button by class failed: " + e.getMessage());
-                }
-            }
-
-            if (!createButtonClicked) {
-                try {
-                    // Method 3: Try by span text inside link
-                    WebElement createButton = driver.findElement(By.xpath("//span[contains(text(), 'Create TECS Lookout')]/parent::a"));
-                    js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", createButton);
-                    Thread.sleep(2000);
-                    createButton.click();
-                    createButtonClicked = true;
-                    System.out.println("Create TECS Lookout button clicked using span text");
-                } catch (Exception e) {
-                    System.out.println("Create button by span text failed: " + e.getMessage());
-                }
-            }
-
-            if (!createButtonClicked) {
-                System.out.println("Could not find Create TECS Lookout button");
+            System.out.println("1. Filling last name: " + data.getLastName());
+            if (!fillInput(driver, "lastName", data.getLastName())) {
+                System.out.println("❌ Failed to fill last name");
                 return false;
             }
 
-            // Wait for new tab/window to open
-            System.out.println("Waiting for new tab to open...");
+            // Fill in first name
+            System.out.println("2. Filling first name: " + data.getFirstName());
+            if (!fillInput(driver, "firstName", data.getFirstName())) {
+                System.out.println("❌ Failed to fill first name");
+                return false;
+            }
+
+            // Fill in DOB
+            System.out.println("3. Filling DOB: " + data.getDob());
+            if (!fillInput(driver, "dob", data.getDob())) {
+                System.out.println("❌ Failed to fill DOB");
+                return false;
+            }
+
+            // Click the SEARCH button
+            System.out.println("4. Clicking SEARCH button...");
+            if (!clickButton(driver, "Search")) {
+                System.out.println("❌ Failed to click search button, but continuing...");
+            }
+
+            // Wait for search results
+            System.out.println("5. Waiting for search results...");
+            Thread.sleep(8000);
+
+            // Store window handle before clicking Create TECS Lookout
+            String originalWindow = driver.getWindowHandle();
+            System.out.println("Original window: " + originalWindow);
+
+            // Click Create TECS Lookout button
+            System.out.println("6. Clicking Create TECS Lookout button...");
+            if (!clickButton(driver, "Create TECS Lookout")) {
+                System.out.println("❌ Failed to click Create TECS Lookout button");
+                return false;
+            }
+
+            // Wait and check for new tab
             Thread.sleep(5000);
-
-            // Check if a new window/tab was opened
             if (driver.getWindowHandles().size() > 1) {
-                System.out.println("New tab detected! Switching to new tab...");
-
-                // Switch to the new tab
+                System.out.println("✅ New tab detected! Switching...");
                 for (String windowHandle : driver.getWindowHandles()) {
                     if (!windowHandle.equals(originalWindow)) {
                         driver.switchTo().window(windowHandle);
@@ -186,740 +80,431 @@ public class FormFiller {
                         break;
                     }
                 }
-
-                // Wait for new tab to load
                 Thread.sleep(3000);
-
                 System.out.println("New tab URL: " + driver.getCurrentUrl());
-                System.out.println("New tab title: " + driver.getTitle());
-
             } else {
-                System.out.println("No new tab opened, staying in current tab");
+                System.out.println("✅ Same tab navigation");
                 System.out.println("Current URL: " + driver.getCurrentUrl());
-                System.out.println("Current title: " + driver.getTitle());
             }
 
-            System.out.println("First page completed successfully!");
+            System.out.println("✅ FIRST PAGE COMPLETED!");
             return true;
+
         } catch (Exception e) {
-            System.out.println("Error filling first page: " + e.getMessage());
+            System.out.println("❌ Error filling first page: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
     /**
-     * Fill out the second page using direct XPath selectors by ID
-     * @param driver WebDriver instance
-     * @param data PersonData with the information to fill
-     * @return true if successful, false otherwise
+     * Fill out the second page with highlighting and step-by-step approach
      */
     public static boolean fillSecondPage(WebDriver driver, PersonData data) {
         try {
-            System.out.println("Filling out second page...");
+            System.out.println("\n=== FILLING SECOND PAGE ===");
+            System.out.println("Current URL: " + driver.getCurrentUrl());
+            System.out.println("Page Title: " + driver.getTitle());
 
-            // Wait for second page to load and verify elements exist
-            if (!waitForSecondPageElements(driver)) {
-                System.out.println("Second page elements not found, but continuing...");
-            }
+            // Wait for page to load
+            System.out.println("Waiting for second page to load...");
+            Thread.sleep(10000);
 
-            // Get current page info
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            System.out.println("=== SECOND PAGE DEBUG INFO ===");
-            System.out.println("URL: " + driver.getCurrentUrl());
-            System.out.println("Title: " + driver.getTitle());
+            // Check what elements are available
+            checkPageElements(driver);
 
-            Object matSelectCount = js.executeScript("return document.querySelectorAll('mat-select').length;");
-            System.out.println("Mat-select elements found: " + matSelectCount);
-
-            // List all mat-select elements with their IDs
-            js.executeScript(
-                    "console.log('=== ALL MAT-SELECT ELEMENTS ==='); " +
-                            "var selects = document.querySelectorAll('mat-select'); " +
-                            "for (var i = 0; i < selects.length; i++) { " +
-                            "  console.log('Index ' + i + ': ID=' + selects[i].id + ', Classes=' + selects[i].className.substring(0,50)); " +
-                            "}"
-            );
-            System.out.println("Check browser console for mat-select element details");
-            System.out.println("==============================");
-
-            // First dropdown - mat-select-4 with option mat-option-68 (OB - OUTBOUND SUBJECT)
-            System.out.println("1. Selecting first dropdown (OB - OUTBOUND SUBJECT)...");
-            if (clickElementByXPath(driver, "//*[@id='mat-select-4']")) {
+            // Step 1: First dropdown (OB - OUTBOUND SUBJECT)
+            System.out.println("\n--- STEP 1: First Dropdown ---");
+            if (clickMatSelect(driver, "mat-select-4", "First dropdown")) {
                 Thread.sleep(2000);
-                clickElementByXPath(driver, "//*[@id='mat-option-68']");
+                clickMatOption(driver, "mat-option-68", "OB - OUTBOUND SUBJECT");
             }
-
             Thread.sleep(2000);
 
-            // Second dropdown - mat-select-10 with option mat-option-549 (AB - AG/BIO COUNTERMEASURES)
-            System.out.println("2. Selecting second dropdown (AB - AG/BIO COUNTERMEASURES)...");
-            if (clickElementByXPath(driver, "//*[@id='mat-select-10']")) {
+            // Step 2: Second dropdown (AB - AG/BIO COUNTERMEASURES)
+            System.out.println("\n--- STEP 2: Second Dropdown ---");
+            if (clickMatSelect(driver, "mat-select-10", "Second dropdown")) {
                 Thread.sleep(2000);
-                clickElementByXPath(driver, "//*[@id='mat-option-549']");
+                clickMatOption(driver, "mat-option-549", "AB - AG/BIO COUNTERMEASURES");
             }
-
             Thread.sleep(2000);
 
-            // Third dropdown - mat-select-6 with option mat-option-238 (0 - NO NOTIFICATION)
-            System.out.println("3. Selecting third dropdown (0 - NO NOTIFICATION)...");
-            if (clickElementByXPath(driver, "//*[@id='mat-select-6']")) {
+            // Step 3: Third dropdown (0 - NO NOTIFICATION)
+            System.out.println("\n--- STEP 3: Third Dropdown ---");
+            if (clickMatSelect(driver, "mat-select-6", "Third dropdown")) {
                 Thread.sleep(2000);
-                clickElementByXPath(driver, "//*[@id='mat-option-238']");
+                clickMatOption(driver, "mat-option-238", "0 - NO NOTIFICATION");
             }
-
             Thread.sleep(2000);
 
-            // Fourth dropdown (Multiple) - mat-select-12 with random option from 253-548
-            System.out.println("4. Selecting fourth dropdown (Multiple)...");
-            if (clickElementByXPath(driver, "//*[@id='mat-select-12']")) {
+            // Step 4: Fill remarks field
+            System.out.println("\n--- STEP 4: Remarks Field ---");
+            fillInputById(driver, "mat-input-1", "Automated test entry - " + System.currentTimeMillis());
+            Thread.sleep(2000);
+
+            // Step 5: Y/N dropdown
+            System.out.println("\n--- STEP 5: Y/N Dropdown ---");
+            if (clickMatSelect(driver, "mat-select-0", "Y/N dropdown")) {
                 Thread.sleep(2000);
-                int randomOption = 253 + random.nextInt(6); // Random between 253-258 for testing
-                clickElementByXPath(driver, "//*[@id='mat-option-" + randomOption + "']");
+                clickMatOption(driver, "mat-option-2", "Y");
             }
-
             Thread.sleep(2000);
 
-            // Fifth dropdown - mat-select-8 with option mat-option-242 (0 - NOT ON PRIMARY)
-            System.out.println("5. Selecting fifth dropdown (0 - NOT ON PRIMARY)...");
-            if (clickElementByXPath(driver, "//*[@id='mat-select-8']")) {
+            // Step 6: Height dropdown
+            System.out.println("\n--- STEP 6: Height Dropdown ---");
+            if (clickMatSelect(driver, "mat-select-2", "Height dropdown")) {
                 Thread.sleep(2000);
-                clickElementByXPath(driver, "//*[@id='mat-option-242']");
+                int randomHeight = 8 + random.nextInt(12);
+                clickMatOption(driver, "mat-option-" + randomHeight, "Height option");
             }
-
             Thread.sleep(2000);
 
-            // Fill remarks field - mat-input-1 (textarea)
-            System.out.println("6. Filling remarks field...");
-            fillElementByXPath(driver, "//*[@id='mat-input-1']", "Automated test entry - " + System.currentTimeMillis());
-
+            // Step 7: Weight field
+            System.out.println("\n--- STEP 7: Weight Field ---");
+            String weight = String.valueOf(120 + random.nextInt(80));
+            fillInputById(driver, "mat-input-0", weight);
             Thread.sleep(2000);
 
-            // Y/N dropdown - mat-select-0 with option mat-option-2 (Y)
-            System.out.println("7. Selecting Y/N dropdown...");
-            if (clickElementByXPath(driver, "//*[@id='mat-select-0']")) {
-                Thread.sleep(2000);
-                clickElementByXPath(driver, "//*[@id='mat-option-2']");
-            }
-
-            Thread.sleep(2000);
-
-            // Height dropdown - mat-select-2 with random height option
-            System.out.println("8. Selecting height dropdown...");
-            if (clickElementByXPath(driver, "//*[@id='mat-select-2']")) {
-                Thread.sleep(2000);
-                int randomHeight = 8 + random.nextInt(20); // Random between 8-27
-                clickElementByXPath(driver, "//*[@id='mat-option-" + randomHeight + "']");
-            }
-
-            Thread.sleep(2000);
-
-            // Fill weight field - mat-input-0
-            System.out.println("9. Filling weight field...");
-            String weight = String.valueOf(120 + random.nextInt(131));
-            fillElementByXPath(driver, "//*[@id='mat-input-0']", weight);
-
-            Thread.sleep(2000);
-
-            // Add Sex button and select option
-            System.out.println("10. Adding sex...");
-            if (clickButtonByText(driver, "Add Sex")) {
-                Thread.sleep(2000);
-                // Find the newly added sex dropdown and select option
-                String sexOption = random.nextBoolean() ? "630" : "631"; // F or M
-                clickNewestMatOption(driver, sexOption);
-            }
-
-            Thread.sleep(2000);
-
-            // Add Race button and select option
-            System.out.println("11. Adding race...");
-            if (clickButtonByText(driver, "Add Race")) {
-                Thread.sleep(2000);
-                int raceOption = 594 + random.nextInt(6); // Random between 594-599
-                clickNewestMatOption(driver, String.valueOf(raceOption));
-            }
-
-            Thread.sleep(2000);
-
-            // Add Eye Color button and select option
-            System.out.println("12. Adding eye color...");
-            if (clickButtonByText(driver, "Add Eye Color")) {
-                Thread.sleep(2000);
-                int eyeOption = 600 + random.nextInt(12); // Random between 600-611
-                clickNewestMatOption(driver, String.valueOf(eyeOption));
-            }
-
-            Thread.sleep(2000);
-
-            // Add Hair Color button and select option
-            System.out.println("13. Adding hair color...");
-            if (clickButtonByText(driver, "Add Hair Color")) {
-                Thread.sleep(2000);
-                int hairOption = 612 + random.nextInt(15); // Random between 612-626
-                clickNewestMatOption(driver, String.valueOf(hairOption));
-            }
-
-            Thread.sleep(2000);
-
-            // Add Name button and fill fields
-            System.out.println("14. Adding name...");
-            if (clickButtonByText(driver, "Add Name")) {
-                Thread.sleep(2000);
-                // Fill last name and first name with the same data from first page
-                fillElementByXPath(driver, "//*[@id='mat-input-2']", data.getLastName());
-                fillElementByXPath(driver, "//*[@id='mat-input-3']", data.getFirstName());
-            }
-
-            Thread.sleep(2000);
-
-            // Add DOB button and fill field
-            System.out.println("15. Adding DOB...");
-            if (clickButtonByText(driver, "Add DOB")) {
-                Thread.sleep(2000);
-                fillElementByXPath(driver, "//*[@id='mat-input-11']", data.getDob());
-            }
-
-            Thread.sleep(2000);
-
-            // Add Citizenship button and select USA
-            System.out.println("16. Adding citizenship...");
-            if (clickButtonByText(driver, "Add Citizenship")) {
-                Thread.sleep(2000);
-                clickNewestMatOption(driver, "1260"); // USA
-            }
-
-            Thread.sleep(2000);
-
-            // Add Passport button and fill details
-            System.out.println("17. Adding passport...");
-            if (clickButtonByText(driver, "Add Passport")) {
-                Thread.sleep(2000);
-                // Select passport type (P - Regular)
-                clickNewestMatOption(driver, "1518");
+            // Step 8: Add Name
+            System.out.println("\n--- STEP 8: Add Name ---");
+            if (clickButton(driver, "Add Name")) {
+                Thread.sleep(3000);
+                fillInputById(driver, "mat-input-2", data.getLastName());
                 Thread.sleep(1000);
-                // Fill passport number
-                fillElementByXPath(driver, "//*[@id='mat-input-19']", data.getPassportNumber());
-                // Select passport country (USA)
-                clickNewestMatOption(driver, "1520");
-                // Fill passport issue date
-                fillElementByXPath(driver, "//*[@id='mat-input-20']", data.getPassportIssueDate());
-                // Fill passport expiry date
-                fillElementByXPath(driver, "//*[@id='mat-input-21']", data.getPassportExpiryDate());
+                fillInputById(driver, "mat-input-3", data.getFirstName());
             }
-
             Thread.sleep(2000);
 
-            // Add A# button and fill field
-            System.out.println("18. Adding A#...");
-            if (clickButtonByText(driver, "Add A#")) {
-                Thread.sleep(2000);
-                fillElementByXPath(driver, "//*[@id='mat-input-22']", data.getaNumber());
+            // Step 9: Add DOB
+            System.out.println("\n--- STEP 9: Add DOB ---");
+            if (clickButton(driver, "Add DOB")) {
+                Thread.sleep(3000);
+                fillInputById(driver, "mat-input-11", data.getDob());
             }
 
-            Thread.sleep(2000);
-
-            // Add Driver's License button and fill details
-            System.out.println("19. Adding driver's license...");
-            if (clickButtonByText(driver, "Add Driver's License")) {
-                Thread.sleep(2000);
-                fillElementByXPath(driver, "//*[@id='mat-input-23']", data.getDriverLicense());
-                // Select random US state
-                int stateOption = 1774 + random.nextInt(62); // Random US state
-                clickNewestMatOption(driver, String.valueOf(stateOption));
-            }
-
-            Thread.sleep(2000);
-
-            // Add SSN button and fill field
-            System.out.println("20. Adding SSN...");
-            if (clickButtonByText(driver, "Add SSN")) {
-                Thread.sleep(2000);
-                // Find the newest input field for SSN
-                List<WebElement> allInputs = driver.findElements(By.xpath("//input[@class and contains(@class, 'mat-input-element')]"));
-                if (!allInputs.isEmpty()) {
-                    WebElement ssnInput = allInputs.get(allInputs.size() - 1);
-                    ssnInput.clear();
-                    ssnInput.sendKeys(data.getSsn());
-                    System.out.println("SSN filled successfully: " + data.getSsn());
-                }
-            }
-
-            System.out.println("Second page completed successfully!");
+            System.out.println("\n✅ SECOND PAGE COMPLETED!");
             return true;
 
         } catch (Exception e) {
-            System.out.println("Error filling second page: " + e.getMessage());
+            System.out.println("❌ Error filling second page: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
     /**
-     * Wait for second page elements to load and verify they exist
+     * Highlight element on page (visual feedback)
      */
-    private static boolean waitForSecondPageElements(WebDriver driver) {
-        System.out.println("Waiting for second page elements to load...");
+    private static void highlightElement(WebDriver driver, WebElement element) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            // Add red border to highlight the element
+            js.executeScript(
+                    "arguments[0].style.border = '3px solid red';" +
+                            "arguments[0].style.backgroundColor = 'yellow';" +
+                            "arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});",
+                    element
+            );
+            Thread.sleep(1000); // Keep highlight for 1 second
+        } catch (Exception e) {
+            System.out.println("Could not highlight element: " + e.getMessage());
+        }
+    }
 
-        JavascriptExecutor js = (JavascriptExecutor) driver;
+    /**
+     * Remove highlight from element
+     */
+    private static void removeHighlight(WebDriver driver, WebElement element) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript(
+                    "arguments[0].style.border = '';" +
+                            "arguments[0].style.backgroundColor = '';",
+                    element
+            );
+        } catch (Exception e) {
+            // Ignore errors when removing highlight
+        }
+    }
 
-        // Wait up to 30 seconds for elements to appear
-        for (int i = 0; i < 30; i++) {
+    /**
+     * Fill input field by ID with highlighting
+     */
+    private static boolean fillInput(WebDriver driver, String fieldId, String value) {
+        try {
+            System.out.println("🎯 Looking for input field: " + fieldId);
+
+            WebElement element = driver.findElement(By.id(fieldId));
+            highlightElement(driver, element);
+
+            System.out.println("✅ Found and highlighted element: " + fieldId);
+            element.clear();
+            element.sendKeys(value);
+
+            removeHighlight(driver, element);
+            System.out.println("✅ Successfully filled: " + fieldId + " = " + value);
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("❌ Failed to fill input " + fieldId + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Fill input field by element ID with highlighting
+     */
+    private static boolean fillInputById(WebDriver driver, String elementId, String value) {
+        try {
+            System.out.println("🎯 Looking for element by ID: " + elementId);
+
+            // Try direct ID approach first
             try {
-                Thread.sleep(1000);
+                WebElement element = driver.findElement(By.id(elementId));
+                highlightElement(driver, element);
 
-                Object matSelectCount = js.executeScript("return document.querySelectorAll('mat-select').length;");
-                System.out.println("Attempt " + (i+1) + ": Found " + matSelectCount + " mat-select elements");
+                System.out.println("✅ Found element: " + elementId);
+                element.clear();
+                element.sendKeys(value);
 
-                // Check for specific elements we need
-                Boolean hasRequiredElements = (Boolean) js.executeScript(
-                        "return $x(\"//*[@id='mat-select-4']\").length > 0 || " +
-                                "       document.querySelectorAll('mat-select').length >= 5;"
-                );
+                removeHighlight(driver, element);
+                System.out.println("✅ Successfully filled: " + elementId + " = " + value);
+                return true;
 
-                if (hasRequiredElements != null && hasRequiredElements) {
-                    System.out.println("Required elements found after " + (i+1) + " seconds");
+            } catch (Exception e) {
+                System.out.println("Direct ID approach failed: " + e.getMessage());
+            }
+
+            // Try XPath approach
+            try {
+                String xpath = "//*[@id='" + elementId + "']";
+                WebElement element = driver.findElement(By.xpath(xpath));
+                highlightElement(driver, element);
+
+                System.out.println("✅ Found element with XPath: " + elementId);
+                element.clear();
+                element.sendKeys(value);
+
+                removeHighlight(driver, element);
+                System.out.println("✅ Successfully filled with XPath: " + elementId + " = " + value);
+                return true;
+
+            } catch (Exception e2) {
+                System.out.println("XPath approach also failed: " + e2.getMessage());
+            }
+
+            System.out.println("❌ Could not find element: " + elementId);
+            return false;
+
+        } catch (Exception e) {
+            System.out.println("❌ Error filling element " + elementId + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Click mat-select dropdown with highlighting
+     */
+    private static boolean clickMatSelect(WebDriver driver, String selectId, String description) {
+        try {
+            System.out.println("🎯 Looking for mat-select: " + selectId + " (" + description + ")");
+
+            // Method 1: Direct ID
+            try {
+                WebElement matSelect = driver.findElement(By.id(selectId));
+                highlightElement(driver, matSelect);
+
+                System.out.println("✅ Found mat-select: " + selectId);
+
+                // Try clicking the trigger inside
+                try {
+                    WebElement trigger = matSelect.findElement(By.className("mat-select-trigger"));
+                    trigger.click();
+                    System.out.println("✅ Clicked mat-select-trigger");
+                    removeHighlight(driver, matSelect);
+                    return true;
+                } catch (Exception e) {
+                    // Try clicking the mat-select itself
+                    matSelect.click();
+                    System.out.println("✅ Clicked mat-select directly");
+                    removeHighlight(driver, matSelect);
                     return true;
                 }
 
             } catch (Exception e) {
-                System.out.println("Error during wait: " + e.getMessage());
+                System.out.println("Direct approach failed: " + e.getMessage());
             }
-        }
 
-        System.out.println("Timeout waiting for second page elements");
-        return false;
-    }
-
-    /**
-     * Click element using XPath with enhanced strategies for Angular Material components
-     */
-    private static boolean clickElementByXPath(WebDriver driver, String xpath) {
-        try {
-            System.out.println("Clicking element with XPath: " + xpath);
-
-            // First, let's check if we're on the right page
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            System.out.println("Current URL: " + driver.getCurrentUrl());
-            System.out.println("Page title: " + driver.getTitle());
-
-            // Check if the element exists at all
-            Object elementCount = js.executeScript("return $x(\"" + xpath + "\").length;");
-            System.out.println("Elements found by JavaScript: " + elementCount);
-
-            if (elementCount.equals(0L)) {
-                System.out.println("Element not found by JavaScript either. Checking page state...");
-
-                // Debug what elements are actually on the page
-                Object matSelectCount = js.executeScript("return document.querySelectorAll('mat-select').length;");
-                System.out.println("Total mat-select elements on page: " + matSelectCount);
-
-                // List all mat-select IDs
-                js.executeScript(
-                        "var selects = document.querySelectorAll('mat-select'); " +
-                                "for (var i = 0; i < selects.length; i++) { " +
-                                "  console.log('mat-select ' + i + ': id=' + selects[i].id + ', classes=' + selects[i].className); " +
-                                "}"
+            // Method 2: JavaScript click
+            try {
+                JavascriptExecutor js = (JavascriptExecutor) driver;
+                Boolean result = (Boolean) js.executeScript(
+                        "var element = document.getElementById('" + selectId + "'); " +
+                                "if (element) { " +
+                                "  element.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
+                                "  var trigger = element.querySelector('.mat-select-trigger'); " +
+                                "  if (trigger) { " +
+                                "    trigger.click(); " +
+                                "  } else { " +
+                                "    element.click(); " +
+                                "  } " +
+                                "  return true; " +
+                                "} " +
+                                "return false;"
                 );
 
-                return false;
+                if (result != null && result) {
+                    System.out.println("✅ Clicked mat-select using JavaScript");
+                    return true;
+                }
+            } catch (Exception e) {
+                System.out.println("JavaScript approach failed: " + e.getMessage());
             }
 
-            // For mat-select elements, use specific clicking strategies
-            if (xpath.contains("mat-select")) {
-                return clickMatSelectElement(driver, xpath);
-            }
-
-            // For regular elements, try standard approaches
-            return clickRegularElement(driver, xpath);
+            System.out.println("❌ Failed to click mat-select: " + selectId);
+            return false;
 
         } catch (Exception e) {
-            System.out.println("Error in clickElementByXPath: " + e.getMessage());
+            System.out.println("❌ Error clicking mat-select " + selectId + ": " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * Specialized method for clicking mat-select elements
+     * Click mat-option with highlighting
      */
-    private static boolean clickMatSelectElement(WebDriver driver, String xpath) {
+    private static boolean clickMatOption(WebDriver driver, String optionId, String description) {
         try {
-            System.out.println("Using mat-select specific clicking strategies...");
-            JavascriptExecutor js = (JavascriptExecutor) driver;
+            System.out.println("🎯 Looking for mat-option: " + optionId + " (" + description + ")");
 
-            // Strategy 1: Click the mat-select-trigger (the actual clickable area)
+            // Wait a bit for dropdown to open
+            Thread.sleep(1000);
+
             try {
-                String triggerXpath = xpath + "//div[@class and contains(@class, 'mat-select-trigger')]";
-                System.out.println("Trying to click mat-select-trigger: " + triggerXpath);
+                WebElement option = driver.findElement(By.id(optionId));
+                highlightElement(driver, option);
 
-                WebElement trigger = driver.findElement(By.xpath(triggerXpath));
-                js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", trigger);
-                Thread.sleep(1000);
-                trigger.click();
-                System.out.println("Successfully clicked mat-select-trigger");
+                System.out.println("✅ Found mat-option: " + optionId);
+                option.click();
+
+                removeHighlight(driver, option);
+                System.out.println("✅ Successfully clicked: " + optionId);
                 return true;
 
             } catch (Exception e) {
-                System.out.println("Mat-select-trigger click failed: " + e.getMessage());
+                System.out.println("❌ Failed to click option " + optionId + ": " + e.getMessage());
+                return false;
             }
 
-            // Strategy 2: Click the mat-select-value div
-            try {
-                String valueXpath = xpath + "//div[@class and contains(@class, 'mat-select-value')]";
-                System.out.println("Trying to click mat-select-value: " + valueXpath);
+        } catch (Exception e) {
+            System.out.println("❌ Error clicking option " + optionId + ": " + e.getMessage());
+            return false;
+        }
+    }
 
-                WebElement valueDiv = driver.findElement(By.xpath(valueXpath));
-                valueDiv.click();
-                System.out.println("Successfully clicked mat-select-value");
+    /**
+     * Click button by text with highlighting
+     */
+    private static boolean clickButton(WebDriver driver, String buttonText) {
+        try {
+            System.out.println("🎯 Looking for button: " + buttonText);
+
+            // Method 1: XPath by text
+            try {
+                WebElement button = driver.findElement(By.xpath("//button[contains(text(), '" + buttonText + "')]"));
+                highlightElement(driver, button);
+
+                System.out.println("✅ Found button: " + buttonText);
+                button.click();
+
+                removeHighlight(driver, button);
+                System.out.println("✅ Successfully clicked button: " + buttonText);
                 return true;
 
             } catch (Exception e) {
-                System.out.println("Mat-select-value click failed: " + e.getMessage());
+                System.out.println("Text-based button search failed: " + e.getMessage());
             }
 
-            // Strategy 3: JavaScript click on mat-select-trigger
+            // Method 2: Look for span inside button
             try {
-                Boolean jsResult = (Boolean) js.executeScript(
-                        "var matSelect = $x(\"" + xpath + "\")[0]; " +
-                                "if (matSelect) { " +
-                                "  var trigger = matSelect.querySelector('.mat-select-trigger'); " +
-                                "  if (trigger) { " +
-                                "    trigger.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
-                                "    trigger.click(); " +
+                WebElement button = driver.findElement(By.xpath("//button//span[contains(text(), '" + buttonText + "')]/ancestor::button"));
+                highlightElement(driver, button);
+
+                System.out.println("✅ Found button by span: " + buttonText);
+                button.click();
+
+                removeHighlight(driver, button);
+                System.out.println("✅ Successfully clicked button by span: " + buttonText);
+                return true;
+
+            } catch (Exception e) {
+                System.out.println("Span-based button search failed: " + e.getMessage());
+            }
+
+            // Method 3: JavaScript search
+            try {
+                JavascriptExecutor js = (JavascriptExecutor) driver;
+                Boolean result = (Boolean) js.executeScript(
+                        "var buttons = document.querySelectorAll('button'); " +
+                                "for (var i = 0; i < buttons.length; i++) { " +
+                                "  if (buttons[i].textContent.includes('" + buttonText + "')) { " +
+                                "    buttons[i].scrollIntoView({behavior: 'smooth', block: 'center'}); " +
+                                "    buttons[i].click(); " +
                                 "    return true; " +
                                 "  } " +
                                 "} " +
                                 "return false;"
                 );
 
-                if (jsResult != null && jsResult) {
-                    System.out.println("Successfully clicked mat-select-trigger using JavaScript");
+                if (result != null && result) {
+                    System.out.println("✅ Clicked button using JavaScript: " + buttonText);
                     return true;
                 }
             } catch (Exception e) {
-                System.out.println("JavaScript mat-select-trigger click failed: " + e.getMessage());
+                System.out.println("JavaScript button search failed: " + e.getMessage());
             }
 
-            // Strategy 4: Use Angular Material's programmatic approach
-            try {
-                Boolean angularResult = (Boolean) js.executeScript(
-                        "var matSelect = $x(\"" + xpath + "\")[0]; " +
-                                "if (matSelect) { " +
-                                "  // Try to trigger the mat-select open programmatically " +
-                                "  var event = new MouseEvent('click', { " +
-                                "    bubbles: true, " +
-                                "    cancelable: true, " +
-                                "    view: window " +
-                                "  }); " +
-                                "  matSelect.dispatchEvent(event); " +
-                                "  return true; " +
-                                "} " +
-                                "return false;"
-                );
-
-                if (angularResult != null && angularResult) {
-                    System.out.println("Successfully clicked mat-select using Angular event");
-                    return true;
-                }
-            } catch (Exception e) {
-                System.out.println("Angular mat-select click failed: " + e.getMessage());
-            }
-
-            // Strategy 5: Force focus and space key (simulates keyboard interaction)
-            try {
-                WebElement matSelect = driver.findElement(By.xpath(xpath));
-                matSelect.click(); // Try regular click first
-                Thread.sleep(500);
-
-                // If that doesn't work, try sending SPACE key (opens dropdowns)
-                matSelect.sendKeys(" ");
-                System.out.println("Successfully opened mat-select using space key");
-                return true;
-
-            } catch (Exception e) {
-                System.out.println("Focus and space key approach failed: " + e.getMessage());
-            }
-
-            System.out.println("All mat-select click strategies failed");
+            System.out.println("❌ Could not find button: " + buttonText);
             return false;
 
         } catch (Exception e) {
-            System.out.println("Error in clickMatSelectElement: " + e.getMessage());
+            System.out.println("❌ Error clicking button " + buttonText + ": " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * Standard clicking approach for non-mat-select elements
+     * Check what elements are available on the page
      */
-    private static boolean clickRegularElement(WebDriver driver, String xpath) {
+    private static void checkPageElements(WebDriver driver) {
         try {
-            // Strategy 1: Standard Selenium click
-            try {
-                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
-                WebElement element = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath(xpath)));
-
-                // Scroll to element first
-                JavascriptExecutor js = (JavascriptExecutor) driver;
-                js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", element);
-                Thread.sleep(1000);
-
-                element.click();
-                System.out.println("Successfully clicked element directly");
-                return true;
-
-            } catch (Exception e) {
-                System.out.println("Direct click failed: " + e.getMessage());
-            }
-
-            // Strategy 2: JavaScript click
-            try {
-                JavascriptExecutor js = (JavascriptExecutor) driver;
-                Boolean jsResult = (Boolean) js.executeScript(
-                        "var element = $x(\"" + xpath + "\")[0]; " +
-                                "if (element) { " +
-                                "  element.click(); " +
-                                "  return true; " +
-                                "} " +
-                                "return false;"
-                );
-
-                if (jsResult != null && jsResult) {
-                    System.out.println("Successfully clicked using JavaScript");
-                    return true;
-                }
-            } catch (Exception e) {
-                System.out.println("JavaScript click failed: " + e.getMessage());
-            }
-
-            return false;
-
-        } catch (Exception e) {
-            System.out.println("Error in clickRegularElement: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Enhanced input field filling with special handling for date fields
-     */
-    private static boolean fillElementByXPath(WebDriver driver, String xpath, String value, String description) {
-        try {
-            System.out.println("Filling " + description + " with value: " + value);
-
-            // Check if this is a date field (has mask="00/00/0000")
             JavascriptExecutor js = (JavascriptExecutor) driver;
-            Boolean isDateField = (Boolean) js.executeScript(
-                    "var element = $x(\"" + xpath + "\")[0]; " +
-                            "return element && element.getAttribute('mask') === '00/00/0000';"
+
+            System.out.println("\n=== PAGE ELEMENT CHECK ===");
+
+            Object matSelectCount = js.executeScript("return document.querySelectorAll('mat-select').length;");
+            System.out.println("Mat-select elements: " + matSelectCount);
+
+            Object inputCount = js.executeScript("return document.querySelectorAll('input').length;");
+            System.out.println("Input elements: " + inputCount);
+
+            Object buttonCount = js.executeScript("return document.querySelectorAll('button').length;");
+            System.out.println("Button elements: " + buttonCount);
+
+            // List first 5 mat-select IDs
+            js.executeScript(
+                    "console.log('=== MAT-SELECT ELEMENTS ==='); " +
+                            "var selects = document.querySelectorAll('mat-select'); " +
+                            "for (var i = 0; i < Math.min(selects.length, 5); i++) { " +
+                            "  console.log('mat-select ' + i + ': ID=' + selects[i].id + ', classes=' + selects[i].className.substring(0,50)); " +
+                            "}"
             );
 
-            if (isDateField != null && isDateField) {
-                return fillDateField(driver, xpath, value, description);
-            } else {
-                return fillRegularField(driver, xpath, value, description);
-            }
+            System.out.println("Check browser console for detailed element list");
+            System.out.println("========================\n");
 
         } catch (Exception e) {
-            System.out.println("Error filling " + description + ": " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Fill element using XPath (overloaded method for backward compatibility)
-     */
-    private static boolean fillElementByXPath(WebDriver driver, String xpath, String value) {
-        return fillElementByXPath(driver, xpath, value, "field");
-    }
-
-    /**
-     * Specialized method for filling date fields with mat-datepicker
-     */
-    private static boolean fillDateField(WebDriver driver, String xpath, String value, String description) {
-        try {
-            System.out.println("Filling date field " + description + " with special handling...");
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-
-            // Strategy 1: Direct input fill (works for most date fields)
-            try {
-                WebElement input = driver.findElement(By.xpath(xpath));
-
-                // Clear the field first
-                input.clear();
-                Thread.sleep(500);
-
-                // Type the date
-                input.sendKeys(value);
-                Thread.sleep(500);
-
-                // Trigger change events
-                js.executeScript(
-                        "var element = arguments[0]; " +
-                                "element.dispatchEvent(new Event('input', {bubbles: true})); " +
-                                "element.dispatchEvent(new Event('change', {bubbles: true}));",
-                        input
-                );
-
-                System.out.println("Successfully filled date field using direct input");
-                return true;
-
-            } catch (Exception e) {
-                System.out.println("Direct date input failed: " + e.getMessage());
-            }
-
-            // Strategy 2: JavaScript value setting with Angular events
-            try {
-                Boolean jsResult = (Boolean) js.executeScript(
-                        "var input = $x(\"" + xpath + "\")[0]; " +
-                                "if (input) { " +
-                                "  input.value = '" + value.replace("'", "\\'") + "'; " +
-                                "  // Trigger Angular-specific events " +
-                                "  input.dispatchEvent(new Event('input', {bubbles: true})); " +
-                                "  input.dispatchEvent(new Event('change', {bubbles: true})); " +
-                                "  input.dispatchEvent(new Event('blur', {bubbles: true})); " +
-                                "  return true; " +
-                                "} " +
-                                "return false;"
-                );
-
-                if (jsResult != null && jsResult) {
-                    System.out.println("Successfully filled date field using JavaScript");
-                    return true;
-                }
-            } catch (Exception e) {
-                System.out.println("JavaScript date fill failed: " + e.getMessage());
-            }
-
-            // Strategy 3: Try using the datepicker button if direct input fails
-            try {
-                // Find the datepicker toggle button
-                String toggleXpath = xpath + "/following-sibling::*//mat-datepicker-toggle//button";
-                WebElement toggleButton = driver.findElement(By.xpath(toggleXpath));
-
-                System.out.println("Found datepicker toggle, opening calendar...");
-                toggleButton.click();
-                Thread.sleep(2000);
-
-                // For now, let's close the calendar and use direct input
-                // (Calendar navigation would be complex to implement)
-                js.executeScript("document.activeElement.blur();");
-                Thread.sleep(1000);
-
-                // Try direct input again after opening/closing calendar
-                WebElement input = driver.findElement(By.xpath(xpath));
-                input.clear();
-                input.sendKeys(value);
-
-                System.out.println("Successfully filled date field after calendar interaction");
-                return true;
-
-            } catch (Exception e) {
-                System.out.println("Datepicker toggle approach failed: " + e.getMessage());
-            }
-
-            System.out.println("All date field strategies failed");
-            return false;
-
-        } catch (Exception e) {
-            System.out.println("Error in fillDateField: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Standard field filling for non-date fields
-     */
-    private static boolean fillRegularField(WebDriver driver, String xpath, String value, String description) {
-        try {
-            // Strategy 1: Direct XPath approach
-            try {
-                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-                WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xpath)));
-
-                element.clear();
-                element.sendKeys(value);
-                System.out.println("Successfully filled " + description + " using direct method");
-                return true;
-
-            } catch (Exception e) {
-                System.out.println("Direct fill failed for " + description + ": " + e.getMessage());
-            }
-
-            // Strategy 2: JavaScript approach
-            try {
-                JavascriptExecutor js = (JavascriptExecutor) driver;
-                Boolean result = (Boolean) js.executeScript(
-                        "var element = $x(\"" + xpath + "\")[0]; " +
-                                "if (element) { " +
-                                "  element.value = '" + value.replace("'", "\\'") + "'; " +
-                                "  element.dispatchEvent(new Event('input')); " +
-                                "  element.dispatchEvent(new Event('change')); " +
-                                "  return true; " +
-                                "} " +
-                                "return false;");
-
-                if (result != null && result) {
-                    System.out.println("Successfully filled " + description + " using JavaScript");
-                    return true;
-                }
-            } catch (Exception e) {
-                System.out.println("JavaScript fill failed for " + description + ": " + e.getMessage());
-            }
-
-            System.out.println("All fill strategies failed for " + description);
-            return false;
-
-        } catch (Exception e) {
-            System.out.println("Error in fillRegularField: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Click button by text content
-     */
-    private static boolean clickButtonByText(WebDriver driver, String buttonText) {
-        try {
-            System.out.println("Clicking button with text: " + buttonText);
-
-            String xpath = "//button[contains(., '" + buttonText + "')]";
-            WebElement button = driver.findElement(By.xpath(xpath));
-
-            // Scroll to button
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", button);
-            Thread.sleep(1000);
-
-            button.click();
-            System.out.println("Successfully clicked button: " + buttonText);
-            return true;
-
-        } catch (Exception e) {
-            System.out.println("Failed to click button " + buttonText + ": " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Click the newest mat-option with specific ID suffix
-     */
-    private static boolean clickNewestMatOption(WebDriver driver, String optionNumber) {
-        try {
-            String optionId = "mat-option-" + optionNumber;
-            System.out.println("Clicking newest mat-option: " + optionId);
-
-            // Wait a bit for dropdown to open
-            Thread.sleep(1000);
-
-            WebElement option = driver.findElement(By.xpath("//*[@id='" + optionId + "']"));
-            option.click();
-            System.out.println("Successfully clicked option: " + optionId);
-            return true;
-
-        } catch (Exception e) {
-            System.out.println("Failed to click option " + optionNumber + ": " + e.getMessage());
-            return false;
+            System.out.println("Error checking page elements: " + e.getMessage());
         }
     }
 
