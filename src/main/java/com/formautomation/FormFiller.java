@@ -28,32 +28,147 @@ public class FormFiller {
             System.out.println("Filling out first page...");
 
             // Fill in last name
+            System.out.println("Filling last name: " + data.getLastName());
             waitAndSendKeys(driver, By.id("lastName"), data.getLastName());
 
             // Fill in first name
+            System.out.println("Filling first name: " + data.getFirstName());
             waitAndSendKeys(driver, By.id("firstName"), data.getFirstName());
 
             // Fill in DOB
+            System.out.println("Filling DOB: " + data.getDob());
             waitAndSendKeys(driver, By.id("dob"), data.getDob());
 
-            // Click the Create TECS Lookout button
-            System.out.println("Looking for Create TECS Lookout button...");
-            try {
-                WebElement createButton = driver.findElement(By.xpath("//a[contains(text(), 'Create TECS Lookout')]"));
+            // Click the SEARCH button first
+            System.out.println("Clicking SEARCH button...");
+            boolean searchClicked = false;
 
-                // Scroll to the button first
-                JavascriptExecutor js = (JavascriptExecutor) driver;
+            // Try multiple approaches to find and click the search button
+            try {
+                // Method 1: Try by button text
+                WebElement searchButton = driver.findElement(By.xpath("//button[contains(text(), 'Search')]"));
+                searchButton.click();
+                searchClicked = true;
+                System.out.println("Search button clicked using text search");
+            } catch (Exception e) {
+                System.out.println("Search by text failed: " + e.getMessage());
+            }
+
+            if (!searchClicked) {
+                try {
+                    // Method 2: Try by class name
+                    WebElement searchButton = driver.findElement(By.className("search-btn"));
+                    searchButton.click();
+                    searchClicked = true;
+                    System.out.println("Search button clicked using class name");
+                } catch (Exception e) {
+                    System.out.println("Search by class failed: " + e.getMessage());
+                }
+            }
+
+            if (!searchClicked) {
+                try {
+                    // Method 3: Try by CSS selector
+                    WebElement searchButton = driver.findElement(By.cssSelector("button.btn.btn-primary"));
+                    searchButton.click();
+                    searchClicked = true;
+                    System.out.println("Search button clicked using CSS selector");
+                } catch (Exception e) {
+                    System.out.println("Search by CSS failed: " + e.getMessage());
+                }
+            }
+
+            if (!searchClicked) {
+                try {
+                    // Method 4: Try by type submit
+                    WebElement searchButton = driver.findElement(By.xpath("//button[@type='submit']"));
+                    searchButton.click();
+                    searchClicked = true;
+                    System.out.println("Search button clicked using submit type");
+                } catch (Exception e) {
+                    System.out.println("Search by submit type failed: " + e.getMessage());
+                }
+            }
+
+            if (!searchClicked) {
+                System.out.println("Could not find or click search button. Trying to continue anyway...");
+            }
+
+            // Wait for search results to load
+            System.out.println("Waiting for search results to load...");
+            Thread.sleep(2000); // Wait 8 seconds for search to complete
+
+            // Check if there's a loading indicator and wait for it to disappear
+            try {
+                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+                wait.until(ExpectedConditions.invisibilityOfElementLocated(
+                        By.cssSelector(".loading, .spinner, .loader, .mat-spinner")));
+                System.out.println("Loading completed");
+            } catch (Exception e) {
+                System.out.println("No loading indicator found or timeout waiting for loading to complete");
+            }
+
+            // Additional wait to ensure search results are fully loaded
+            Thread.sleep(3000);
+
+            // Scroll down to find the Create TECS Lookout button
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript("window.scrollBy(0, 300);");
+            Thread.sleep(2000);
+
+            // Now look for the Create TECS Lookout button
+            System.out.println("Looking for Create TECS Lookout button...");
+            boolean createButtonClicked = false;
+
+            try {
+                // Method 1: Try by link text
+                WebElement createButton = driver.findElement(By.xpath("//a[contains(text(), 'Create TECS Lookout')]"));
                 js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", createButton);
                 Thread.sleep(2000);
-
                 createButton.click();
-                System.out.println("Create TECS Lookout button clicked successfully");
+                createButtonClicked = true;
+                System.out.println("Create TECS Lookout button clicked using link text");
             } catch (Exception e) {
-                System.out.println("Could not find Create TECS Lookout button: " + e.getMessage());
+                System.out.println("Create button by link text failed: " + e.getMessage());
+            }
+
+            if (!createButtonClicked) {
+                try {
+                    // Method 2: Try by class name
+                    WebElement createButton = driver.findElement(By.className("event-button"));
+                    js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", createButton);
+                    Thread.sleep(2000);
+                    createButton.click();
+                    createButtonClicked = true;
+                    System.out.println("Create TECS Lookout button clicked using class name");
+                } catch (Exception e) {
+                    System.out.println("Create button by class failed: " + e.getMessage());
+                }
+            }
+
+            if (!createButtonClicked) {
+                try {
+                    // Method 3: Try by span text inside link
+                    WebElement createButton = driver.findElement(By.xpath("//span[contains(text(), 'Create TECS Lookout')]/parent::a"));
+                    js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", createButton);
+                    Thread.sleep(2000);
+                    createButton.click();
+                    createButtonClicked = true;
+                    System.out.println("Create TECS Lookout button clicked using span text");
+                } catch (Exception e) {
+                    System.out.println("Create button by span text failed: " + e.getMessage());
+                }
+            }
+
+            if (!createButtonClicked) {
+                System.out.println("Could not find Create TECS Lookout button");
                 return false;
             }
 
-            System.out.println("First page completed!");
+            // Wait for second page to start loading
+            Thread.sleep(3000);
+
+            System.out.println("First page completed successfully!");
             return true;
         } catch (Exception e) {
             System.out.println("Error filling first page: " + e.getMessage());
