@@ -492,7 +492,7 @@ public class FormFiller {
     }
 
     /**
-     * Click element using XPath with enhanced debugging and fallback strategies
+     * Click element using XPath with enhanced strategies for Angular Material components
      */
     private static boolean clickElementByXPath(WebDriver driver, String xpath) {
         try {
@@ -525,14 +525,142 @@ public class FormFiller {
                 return false;
             }
 
-            // If element exists, try different click strategies
+            // For mat-select elements, use specific clicking strategies
+            if (xpath.contains("mat-select")) {
+                return clickMatSelectElement(driver, xpath);
+            }
 
-            // Strategy 1: Try clicking the mat-select directly
+            // For regular elements, try standard approaches
+            return clickRegularElement(driver, xpath);
+
+        } catch (Exception e) {
+            System.out.println("Error in clickElementByXPath: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Specialized method for clicking mat-select elements
+     */
+    private static boolean clickMatSelectElement(WebDriver driver, String xpath) {
+        try {
+            System.out.println("Using mat-select specific clicking strategies...");
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Strategy 1: Click the mat-select-trigger (the actual clickable area)
+            try {
+                String triggerXpath = xpath + "//div[@class and contains(@class, 'mat-select-trigger')]";
+                System.out.println("Trying to click mat-select-trigger: " + triggerXpath);
+
+                WebElement trigger = driver.findElement(By.xpath(triggerXpath));
+                js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", trigger);
+                Thread.sleep(1000);
+                trigger.click();
+                System.out.println("Successfully clicked mat-select-trigger");
+                return true;
+
+            } catch (Exception e) {
+                System.out.println("Mat-select-trigger click failed: " + e.getMessage());
+            }
+
+            // Strategy 2: Click the mat-select-value div
+            try {
+                String valueXpath = xpath + "//div[@class and contains(@class, 'mat-select-value')]";
+                System.out.println("Trying to click mat-select-value: " + valueXpath);
+
+                WebElement valueDiv = driver.findElement(By.xpath(valueXpath));
+                valueDiv.click();
+                System.out.println("Successfully clicked mat-select-value");
+                return true;
+
+            } catch (Exception e) {
+                System.out.println("Mat-select-value click failed: " + e.getMessage());
+            }
+
+            // Strategy 3: JavaScript click on mat-select-trigger
+            try {
+                Boolean jsResult = (Boolean) js.executeScript(
+                        "var matSelect = $x(\"" + xpath + "\")[0]; " +
+                                "if (matSelect) { " +
+                                "  var trigger = matSelect.querySelector('.mat-select-trigger'); " +
+                                "  if (trigger) { " +
+                                "    trigger.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
+                                "    trigger.click(); " +
+                                "    return true; " +
+                                "  } " +
+                                "} " +
+                                "return false;"
+                );
+
+                if (jsResult != null && jsResult) {
+                    System.out.println("Successfully clicked mat-select-trigger using JavaScript");
+                    return true;
+                }
+            } catch (Exception e) {
+                System.out.println("JavaScript mat-select-trigger click failed: " + e.getMessage());
+            }
+
+            // Strategy 4: Use Angular Material's programmatic approach
+            try {
+                Boolean angularResult = (Boolean) js.executeScript(
+                        "var matSelect = $x(\"" + xpath + "\")[0]; " +
+                                "if (matSelect) { " +
+                                "  // Try to trigger the mat-select open programmatically " +
+                                "  var event = new MouseEvent('click', { " +
+                                "    bubbles: true, " +
+                                "    cancelable: true, " +
+                                "    view: window " +
+                                "  }); " +
+                                "  matSelect.dispatchEvent(event); " +
+                                "  return true; " +
+                                "} " +
+                                "return false;"
+                );
+
+                if (angularResult != null && angularResult) {
+                    System.out.println("Successfully clicked mat-select using Angular event");
+                    return true;
+                }
+            } catch (Exception e) {
+                System.out.println("Angular mat-select click failed: " + e.getMessage());
+            }
+
+            // Strategy 5: Force focus and space key (simulates keyboard interaction)
+            try {
+                WebElement matSelect = driver.findElement(By.xpath(xpath));
+                matSelect.click(); // Try regular click first
+                Thread.sleep(500);
+
+                // If that doesn't work, try sending SPACE key (opens dropdowns)
+                matSelect.sendKeys(" ");
+                System.out.println("Successfully opened mat-select using space key");
+                return true;
+
+            } catch (Exception e) {
+                System.out.println("Focus and space key approach failed: " + e.getMessage());
+            }
+
+            System.out.println("All mat-select click strategies failed");
+            return false;
+
+        } catch (Exception e) {
+            System.out.println("Error in clickMatSelectElement: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Standard clicking approach for non-mat-select elements
+     */
+    private static boolean clickRegularElement(WebDriver driver, String xpath) {
+        try {
+            // Strategy 1: Standard Selenium click
             try {
                 WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
                 WebElement element = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath(xpath)));
 
                 // Scroll to element first
+                JavascriptExecutor js = (JavascriptExecutor) driver;
                 js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", element);
                 Thread.sleep(1000);
 
@@ -544,44 +672,9 @@ public class FormFiller {
                 System.out.println("Direct click failed: " + e.getMessage());
             }
 
-            // Strategy 2: Click the span inside (like console shows)
+            // Strategy 2: JavaScript click
             try {
-                String spanXpath = xpath + "//span[contains(@class, 'mat-select-placeholder') or contains(@class, 'mat-select-value')]";
-                WebElement spanElement = driver.findElement(By.xpath(spanXpath));
-                spanElement.click();
-                System.out.println("Successfully clicked span inside mat-select");
-                return true;
-            } catch (Exception e) {
-                System.out.println("Span click failed: " + e.getMessage());
-            }
-
-            // Strategy 3: JavaScript click on the exact center point (like console analysis)
-            try {
-                Boolean jsResult = (Boolean) js.executeScript(
-                        "var element = $x(\"" + xpath + "\")[0]; " +
-                                "if (element) { " +
-                                "  var rect = element.getBoundingClientRect(); " +
-                                "  var centerX = rect.left + rect.width / 2; " +
-                                "  var centerY = rect.top + rect.height / 2; " +
-                                "  var clickableElement = document.elementFromPoint(centerX, centerY); " +
-                                "  if (clickableElement) { " +
-                                "    clickableElement.click(); " +
-                                "    return true; " +
-                                "  } " +
-                                "} " +
-                                "return false;"
-                );
-
-                if (jsResult != null && jsResult) {
-                    System.out.println("Successfully clicked using center point strategy");
-                    return true;
-                }
-            } catch (Exception e) {
-                System.out.println("Center point click failed: " + e.getMessage());
-            }
-
-            // Strategy 4: Force JavaScript click on the mat-select itself
-            try {
+                JavascriptExecutor js = (JavascriptExecutor) driver;
                 Boolean jsResult = (Boolean) js.executeScript(
                         "var element = $x(\"" + xpath + "\")[0]; " +
                                 "if (element) { " +
@@ -592,57 +685,194 @@ public class FormFiller {
                 );
 
                 if (jsResult != null && jsResult) {
-                    System.out.println("Successfully clicked using JavaScript direct");
+                    System.out.println("Successfully clicked using JavaScript");
                     return true;
                 }
             } catch (Exception e) {
-                System.out.println("JavaScript direct click failed: " + e.getMessage());
+                System.out.println("JavaScript click failed: " + e.getMessage());
             }
 
-            System.out.println("All click strategies failed for: " + xpath);
             return false;
 
         } catch (Exception e) {
-            System.out.println("Error in clickElementByXPath: " + e.getMessage());
+            System.out.println("Error in clickRegularElement: " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * Fill element using XPath
+     * Enhanced input field filling with special handling for date fields
      */
-    private static boolean fillElementByXPath(WebDriver driver, String xpath, String value) {
+    private static boolean fillElementByXPath(WebDriver driver, String xpath, String value, String description) {
         try {
-            System.out.println("Filling element with XPath: " + xpath + " with value: " + value);
+            System.out.println("Filling " + description + " with value: " + value);
 
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-            WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xpath)));
+            // Check if this is a date field (has mask="00/00/0000")
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            Boolean isDateField = (Boolean) js.executeScript(
+                    "var element = $x(\"" + xpath + "\")[0]; " +
+                            "return element && element.getAttribute('mask') === '00/00/0000';"
+            );
 
-            element.clear();
-            element.sendKeys(value);
-            System.out.println("Successfully filled element");
-            return true;
+            if (isDateField != null && isDateField) {
+                return fillDateField(driver, xpath, value, description);
+            } else {
+                return fillRegularField(driver, xpath, value, description);
+            }
 
         } catch (Exception e) {
-            System.out.println("Failed to fill element with XPath " + xpath + ": " + e.getMessage());
+            System.out.println("Error filling " + description + ": " + e.getMessage());
+            return false;
+        }
+    }
 
-            // Fallback: try JavaScript
+    /**
+     * Fill element using XPath (overloaded method for backward compatibility)
+     */
+    private static boolean fillElementByXPath(WebDriver driver, String xpath, String value) {
+        return fillElementByXPath(driver, xpath, value, "field");
+    }
+
+    /**
+     * Specialized method for filling date fields with mat-datepicker
+     */
+    private static boolean fillDateField(WebDriver driver, String xpath, String value, String description) {
+        try {
+            System.out.println("Filling date field " + description + " with special handling...");
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Strategy 1: Direct input fill (works for most date fields)
+            try {
+                WebElement input = driver.findElement(By.xpath(xpath));
+
+                // Clear the field first
+                input.clear();
+                Thread.sleep(500);
+
+                // Type the date
+                input.sendKeys(value);
+                Thread.sleep(500);
+
+                // Trigger change events
+                js.executeScript(
+                        "var element = arguments[0]; " +
+                                "element.dispatchEvent(new Event('input', {bubbles: true})); " +
+                                "element.dispatchEvent(new Event('change', {bubbles: true}));",
+                        input
+                );
+
+                System.out.println("Successfully filled date field using direct input");
+                return true;
+
+            } catch (Exception e) {
+                System.out.println("Direct date input failed: " + e.getMessage());
+            }
+
+            // Strategy 2: JavaScript value setting with Angular events
+            try {
+                Boolean jsResult = (Boolean) js.executeScript(
+                        "var input = $x(\"" + xpath + "\")[0]; " +
+                                "if (input) { " +
+                                "  input.value = '" + value.replace("'", "\\'") + "'; " +
+                                "  // Trigger Angular-specific events " +
+                                "  input.dispatchEvent(new Event('input', {bubbles: true})); " +
+                                "  input.dispatchEvent(new Event('change', {bubbles: true})); " +
+                                "  input.dispatchEvent(new Event('blur', {bubbles: true})); " +
+                                "  return true; " +
+                                "} " +
+                                "return false;"
+                );
+
+                if (jsResult != null && jsResult) {
+                    System.out.println("Successfully filled date field using JavaScript");
+                    return true;
+                }
+            } catch (Exception e) {
+                System.out.println("JavaScript date fill failed: " + e.getMessage());
+            }
+
+            // Strategy 3: Try using the datepicker button if direct input fails
+            try {
+                // Find the datepicker toggle button
+                String toggleXpath = xpath + "/following-sibling::*//mat-datepicker-toggle//button";
+                WebElement toggleButton = driver.findElement(By.xpath(toggleXpath));
+
+                System.out.println("Found datepicker toggle, opening calendar...");
+                toggleButton.click();
+                Thread.sleep(2000);
+
+                // For now, let's close the calendar and use direct input
+                // (Calendar navigation would be complex to implement)
+                js.executeScript("document.activeElement.blur();");
+                Thread.sleep(1000);
+
+                // Try direct input again after opening/closing calendar
+                WebElement input = driver.findElement(By.xpath(xpath));
+                input.clear();
+                input.sendKeys(value);
+
+                System.out.println("Successfully filled date field after calendar interaction");
+                return true;
+
+            } catch (Exception e) {
+                System.out.println("Datepicker toggle approach failed: " + e.getMessage());
+            }
+
+            System.out.println("All date field strategies failed");
+            return false;
+
+        } catch (Exception e) {
+            System.out.println("Error in fillDateField: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Standard field filling for non-date fields
+     */
+    private static boolean fillRegularField(WebDriver driver, String xpath, String value, String description) {
+        try {
+            // Strategy 1: Direct XPath approach
+            try {
+                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+                WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xpath)));
+
+                element.clear();
+                element.sendKeys(value);
+                System.out.println("Successfully filled " + description + " using direct method");
+                return true;
+
+            } catch (Exception e) {
+                System.out.println("Direct fill failed for " + description + ": " + e.getMessage());
+            }
+
+            // Strategy 2: JavaScript approach
             try {
                 JavascriptExecutor js = (JavascriptExecutor) driver;
-                js.executeScript(
-                        "var element = document.evaluate(\"" + xpath + "\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue; " +
+                Boolean result = (Boolean) js.executeScript(
+                        "var element = $x(\"" + xpath + "\")[0]; " +
                                 "if (element) { " +
                                 "  element.value = '" + value.replace("'", "\\'") + "'; " +
                                 "  element.dispatchEvent(new Event('input')); " +
                                 "  element.dispatchEvent(new Event('change')); " +
-                                "}"
-                );
-                System.out.println("Successfully filled element using JavaScript");
-                return true;
-            } catch (Exception jsEx) {
-                System.out.println("JavaScript fill also failed: " + jsEx.getMessage());
-                return false;
+                                "  return true; " +
+                                "} " +
+                                "return false;");
+
+                if (result != null && result) {
+                    System.out.println("Successfully filled " + description + " using JavaScript");
+                    return true;
+                }
+            } catch (Exception e) {
+                System.out.println("JavaScript fill failed for " + description + ": " + e.getMessage());
             }
+
+            System.out.println("All fill strategies failed for " + description);
+            return false;
+
+        } catch (Exception e) {
+            System.out.println("Error in fillRegularField: " + e.getMessage());
+            return false;
         }
     }
 
