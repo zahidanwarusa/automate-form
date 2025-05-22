@@ -228,6 +228,23 @@ public class FormFiller {
             }
             Thread.sleep(2000);
 
+            // Fourth dropdown (Multiple)
+            System.out.println("4. Selecting fourth dropdown (Multiple)...");
+            if (clickMatSelectByTrigger(driver, "mat-select-12")) {
+                Thread.sleep(2000);
+                int randomOption = 253 + random.nextInt(6); // Random between 253-258
+                clickOptionById(driver, "mat-option-" + randomOption);
+            }
+            Thread.sleep(2000);
+
+            // Fifth dropdown
+            System.out.println("5. Selecting fifth dropdown (0 - NOT ON PRIMARY)...");
+            if (clickMatSelectByTrigger(driver, "mat-select-8")) {
+                Thread.sleep(2000);
+                clickOptionById(driver, "mat-option-242");
+            }
+            Thread.sleep(2000);
+
             // Fill remarks field (KEEP ORIGINAL WORKING APPROACH)
             System.out.println("6. Filling remarks field...");
             fillInputByIdOriginal(driver, "mat-input-1", "Automated test entry - " + System.currentTimeMillis());
@@ -256,6 +273,42 @@ public class FormFiller {
             fillInputByIdOriginal(driver, "mat-input-0", weight);
             Thread.sleep(2000);
 
+            // Add Sex
+            System.out.println("10. Adding sex...");
+            if (clickButtonOriginal(driver, "Add Sex")) {
+                Thread.sleep(2000);
+                String sexOption = random.nextBoolean() ? "630" : "631"; // F or M
+                clickNewestMatOption(driver, sexOption);
+            }
+            Thread.sleep(2000);
+
+            // Add Race
+            System.out.println("11. Adding race...");
+            if (clickButtonOriginal(driver, "Add Race")) {
+                Thread.sleep(2000);
+                int raceOption = 594 + random.nextInt(6); // Random between 594-599
+                clickNewestMatOption(driver, String.valueOf(raceOption));
+            }
+            Thread.sleep(2000);
+
+            // Add Eye Color
+            System.out.println("12. Adding eye color...");
+            if (clickButtonOriginal(driver, "Add Eye Color")) {
+                Thread.sleep(2000);
+                int eyeOption = 600 + random.nextInt(12); // Random between 600-611
+                clickNewestMatOption(driver, String.valueOf(eyeOption));
+            }
+            Thread.sleep(2000);
+
+            // Add Hair Color
+            System.out.println("13. Adding hair color...");
+            if (clickButtonOriginal(driver, "Add Hair Color")) {
+                Thread.sleep(2000);
+                int hairOption = 612 + random.nextInt(15); // Random between 612-626
+                clickNewestMatOption(driver, String.valueOf(hairOption));
+            }
+            Thread.sleep(2000);
+
             // Add Name (KEEP ORIGINAL WORKING APPROACH)
             System.out.println("14. Adding name...");
             if (clickButtonOriginal(driver, "Add Name")) {
@@ -270,6 +323,72 @@ public class FormFiller {
             if (clickButtonOriginal(driver, "Add DOB")) {
                 Thread.sleep(2000);
                 fillInputByIdOriginal(driver, "mat-input-11", data.getDob());
+            }
+            Thread.sleep(2000);
+
+            // Add Citizenship
+            System.out.println("16. Adding citizenship...");
+            if (clickButtonOriginal(driver, "Add Citizenship")) {
+                Thread.sleep(2000);
+                clickNewestMatOption(driver, "1260"); // USA
+            }
+            Thread.sleep(2000);
+
+            // Add Passport
+            System.out.println("17. Adding passport...");
+            if (clickButtonOriginal(driver, "Add Passport")) {
+                Thread.sleep(2000);
+                // Select passport type (P - Regular)
+                clickNewestMatOption(driver, "1518");
+                Thread.sleep(1000);
+                // Fill passport number
+                fillInputByIdOriginal(driver, "mat-input-19", data.getPassportNumber());
+                Thread.sleep(1000);
+                // Select passport country (USA)
+                clickNewestMatOption(driver, "1520");
+                Thread.sleep(1000);
+                // Fill passport issue date
+                fillInputByIdOriginal(driver, "mat-input-20", data.getPassportIssueDate());
+                Thread.sleep(1000);
+                // Fill passport expiry date
+                fillInputByIdOriginal(driver, "mat-input-21", data.getPassportExpiryDate());
+            }
+            Thread.sleep(2000);
+
+            // Add A#
+            System.out.println("18. Adding A#...");
+            if (clickButtonOriginal(driver, "Add A#")) {
+                Thread.sleep(2000);
+                fillInputByIdOriginal(driver, "mat-input-22", data.getaNumber());
+            }
+            Thread.sleep(2000);
+
+            // Add Driver's License
+            System.out.println("19. Adding driver's license...");
+            if (clickButtonOriginal(driver, "Add Driver's License")) {
+                Thread.sleep(2000);
+                fillInputByIdOriginal(driver, "mat-input-23", data.getDriverLicense());
+                Thread.sleep(1000);
+                // Select random US state
+                int stateOption = 1774 + random.nextInt(62); // Random US state
+                clickNewestMatOption(driver, String.valueOf(stateOption));
+            }
+            Thread.sleep(2000);
+
+            // Add SSN
+            System.out.println("20. Adding SSN...");
+            if (clickButtonOriginal(driver, "Add SSN")) {
+                Thread.sleep(2000);
+                // Find the newest input field for SSN
+                List<WebElement> allInputs = driver.findElements(By.xpath("//input[@class and contains(@class, 'mat-input-element')]"));
+                if (!allInputs.isEmpty()) {
+                    WebElement ssnInput = allInputs.get(allInputs.size() - 1);
+                    ssnInput.clear();
+                    ssnInput.sendKeys(data.getSsn());
+                    System.out.println("SSN filled successfully: " + data.getSsn());
+                } else {
+                    System.out.println("Could not find SSN input field");
+                }
             }
 
             System.out.println("Second page completed successfully!");
@@ -377,6 +496,28 @@ public class FormFiller {
     }
 
     /**
+     * Click the newest mat-option with specific ID suffix (for dynamically added dropdowns)
+     */
+    private static boolean clickNewestMatOption(WebDriver driver, String optionNumber) {
+        try {
+            String optionId = "mat-option-" + optionNumber;
+            System.out.println("Clicking newest mat-option: " + optionId);
+
+            // Wait a bit for dropdown to open
+            Thread.sleep(1000);
+
+            WebElement option = driver.findElement(By.id(optionId));
+            option.click();
+            System.out.println("Successfully clicked option: " + optionId);
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("Failed to click option " + optionNumber + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * ORIGINAL WORKING METHOD: Fill input by ID
      */
     private static boolean fillInputByIdOriginal(WebDriver driver, String inputId, String value) {
@@ -415,7 +556,7 @@ public class FormFiller {
     }
 
     /**
-     * ORIGINAL WORKING METHOD: Wait and send keys -d ropdown
+     * ORIGINAL WORKING METHOD: Wait and send keys
      */
     private static boolean waitAndSendKeys(WebDriver driver, By by, String text) {
         try {
