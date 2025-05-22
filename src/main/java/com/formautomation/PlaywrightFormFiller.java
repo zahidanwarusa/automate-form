@@ -647,9 +647,18 @@ public class RobustPlaywrightFormFiller {
                     System.out.println("Options for select " + i + ": " + options);
 
                     // Select a meaningful option (usually the second one if available)
-                    if (select.locator("option").count() > 1) {
-                        select.selectOption(select.locator("option").nth(1));
-                        System.out.println("Selected option in regular select " + i);
+                    int optionCount = select.locator("option").count();
+                    if (optionCount > 1) {
+                        // Get the value of the second option
+                        String optionValue = select.locator("option").nth(1).getAttribute("value");
+                        if (optionValue != null && !optionValue.isEmpty()) {
+                            select.selectOption(optionValue);
+                            System.out.println("Selected option with value: " + optionValue);
+                        } else {
+                            // If no value, try by index
+                            select.selectOption(new SelectOption().setIndex(1));
+                            System.out.println("Selected option by index 1");
+                        }
                     }
 
                 } catch (Exception e) {
