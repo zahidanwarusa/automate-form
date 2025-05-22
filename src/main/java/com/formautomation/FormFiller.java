@@ -415,7 +415,7 @@ public class FormFiller {
     }
 
     /**
-     * ORIGINAL WORKING METHOD: Wait and send keys
+     * ORIGINAL WORKING METHOD: Wait and send keys -d ropdown
      */
     private static boolean waitAndSendKeys(WebDriver driver, By by, String text) {
         try {
