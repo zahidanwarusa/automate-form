@@ -3,7 +3,7 @@ package com.formautomation;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.*;
 
-public class RobustPlaywrightFormFiller {
+public class PlaywrightFormFiller {
 
     public static void main(String[] args) {
         // Generate random data
