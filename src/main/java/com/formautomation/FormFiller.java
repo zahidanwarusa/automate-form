@@ -157,26 +157,28 @@ public class FormFiller {
 
             System.out.println("17. Adding Passport");
             if (clickButtonRobust(driver, "Add Passport")) {
-                Thread.sleep(4000);
+                Thread.sleep(3000);
 
                 // Passport has multiple fields - handle them step by step
-                System.out.println("   17a. Passport Type");
-                selectNewestDropdown(driver, "1518"); // P - Regular
-                Thread.sleep(2000);
+                System.out.println("  - Selecting passport type");
+                if (selectNewestDropdown(driver, "1518")) { // P - Regular
+                    Thread.sleep(1000);
+                }
 
-                System.out.println("   17b. Passport Number");
+                System.out.println("  - Filling passport number");
                 fillInput(driver, "mat-input-19", data.getPassportNumber());
                 Thread.sleep(1000);
 
-                System.out.println("   17c. Passport Country");
-                selectNewestDropdown(driver, "1520"); // USA
-                Thread.sleep(2000);
+                System.out.println("  - Selecting passport country");
+                if (selectSecondNewestDropdown(driver, "1520")) { // USA
+                    Thread.sleep(1000);
+                }
 
-                System.out.println("   17d. Passport Issue Date");
+                System.out.println("  - Filling passport issue date");
                 fillInput(driver, "mat-input-20", data.getPassportIssueDate());
                 Thread.sleep(1000);
 
-                System.out.println("   17e. Passport Expiry Date");
+                System.out.println("  - Filling passport expiry date");
                 fillInput(driver, "mat-input-21", data.getPassportExpiryDate());
             }
 
@@ -186,15 +188,15 @@ public class FormFiller {
                 fillInput(driver, "mat-input-22", data.getaNumber());
             }
 
-            System.out.println("19. Adding Driver License");
-            if (clickButtonRobust(driver, "Driver")) { // Simplified to avoid apostrophe issues
-                Thread.sleep(4000);
+            System.out.println("19. Adding Drivers License");
+            if (clickButtonRobust(driver, "Drivers License")) { // Avoid apostrophe
+                Thread.sleep(3000);
 
-                System.out.println("   19a. License Number");
+                System.out.println("  - Filling license number");
                 fillInput(driver, "mat-input-23", data.getDriverLicense());
-                Thread.sleep(2000);
+                Thread.sleep(1000);
 
-                System.out.println("   19b. License State");
+                System.out.println("  - Selecting state");
                 int stateOption = 1774 + random.nextInt(62); // Random US state
                 selectNewestDropdown(driver, String.valueOf(stateOption));
             }
@@ -202,29 +204,22 @@ public class FormFiller {
             System.out.println("20. Adding SSN");
             if (clickButtonRobust(driver, "Add SSN")) {
                 Thread.sleep(3000);
-                // Find newest input for SSN
-                fillNewestInput(driver, data.getSsn());
+                // Find newest input - SSN is always the last input added
+                List<WebElement> allInputs = driver.findElements(By.xpath("//input[contains(@class, 'mat-input-element')]"));
+                if (!allInputs.isEmpty()) {
+                    WebElement ssnInput = allInputs.get(allInputs.size() - 1);
+                    ssnInput.clear();
+                    ssnInput.sendKeys(data.getSsn());
+                    System.out.println("✅ SSN filled: " + data.getSsn());
+                } else {
+                    System.out.println("❌ SSN input not found");
+                }
             }
 
-            // Additional fields that might be missing
-            System.out.println("21. Checking for additional fields...");
+            // Final cleanup - close any remaining open dropdowns
+            System.out.println("21. Final cleanup");
+            forceCloseDropdown(driver);
             Thread.sleep(2000);
-
-            // Check if there are any other "Add" buttons we missed
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript(
-                    "console.log('=== REMAINING ADD BUTTONS ==='); " +
-                            "var buttons = document.querySelectorAll('button'); " +
-                            "for (var i = 0; i < buttons.length; i++) { " +
-                            "  var text = buttons[i].textContent.trim(); " +
-                            "  if (text.includes('Add') && !text.includes('Sex') && !text.includes('Race') && " +
-                            "      !text.includes('Eye') && !text.includes('Hair') && !text.includes('Name') && " +
-                            "      !text.includes('DOB') && !text.includes('Citizenship') && !text.includes('Passport') && " +
-                            "      !text.includes('A#') && !text.includes('Driver') && !text.includes('SSN')) { " +
-                            "    console.log('Unused Add button: ' + text); " +
-                            "  } " +
-                            "}"
-            );
 
             System.out.println("Second page completed successfully!");
             return true;
@@ -237,13 +232,13 @@ public class FormFiller {
     }
 
     /**
-     * ROBUST dropdown selection - handles interception and ensures closing
+     * ROBUST dropdown selection - handles interception with FORCED closure
      */
     private static boolean selectDropdown(WebDriver driver, String selectId, String optionId) {
         try {
             System.out.println("🎯 Selecting " + selectId + " → " + optionId);
 
-            // Method 1: Try standard approach with forced closing
+            // Method 1: Try standard approach with aggressive closing
             try {
                 WebElement matSelect = driver.findElement(By.id(selectId));
                 matSelect.click();
@@ -253,65 +248,44 @@ public class FormFiller {
                 option.click();
                 Thread.sleep(500);
 
-                // Force close dropdown - multiple methods
-                JavascriptExecutor js = (JavascriptExecutor) driver;
-                js.executeScript("document.body.click();");
-                Thread.sleep(300);
-                js.executeScript("document.querySelector('body').click();");
-                Thread.sleep(300);
+                // AGGRESSIVE dropdown closing - try multiple methods
+                forceCloseDropdown(driver);
 
-                // Press ESC key as backup
-                js.executeScript(
-                        "var event = new KeyboardEvent('keydown', {key: 'Escape', keyCode: 27}); " +
-                                "document.dispatchEvent(event);"
-                );
-                Thread.sleep(500);
-
-                System.out.println("✅ Selected and closed " + selectId + " → " + optionId);
+                System.out.println("✅ Selected " + selectId + " → " + optionId);
                 return true;
-
             } catch (Exception e) {
                 System.out.println("Standard approach failed: " + e.getMessage());
             }
 
-            // Method 2: Full JavaScript approach with guaranteed closing
+            // Method 2: JavaScript approach for interception with forced close
             try {
                 JavascriptExecutor js = (JavascriptExecutor) driver;
                 Boolean result = (Boolean) js.executeScript(
                         "var select = document.getElementById('" + selectId + "'); " +
                                 "if (select) { " +
-                                "  console.log('Clicking select: " + selectId + "'); " +
                                 "  select.click(); " +
-                                "  " +
                                 "  setTimeout(function() { " +
                                 "    var option = document.getElementById('" + optionId + "'); " +
                                 "    if (option) { " +
-                                "      console.log('Clicking option: " + optionId + "'); " +
                                 "      option.click(); " +
-                                "      " +
-                                "      // Multiple close attempts " +
+                                "      // Force close dropdown multiple ways " +
                                 "      setTimeout(function() { " +
                                 "        document.body.click(); " +
-                                "        document.querySelector('body').click(); " +
-                                "        // Close any open overlays " +
-                                "        var overlays = document.querySelectorAll('.cdk-overlay-pane'); " +
-                                "        for (var i = 0; i < overlays.length; i++) { " +
-                                "          overlays[i].style.display = 'none'; " +
-                                "        } " +
-                                "        console.log('Dropdown closed for " + selectId + "'); " +
+                                "        document.activeElement.blur(); " +
+                                "        // Click somewhere safe " +
+                                "        var safe = document.querySelector('h1, h2, .page-title'); " +
+                                "        if (safe) safe.click(); " +
                                 "      }, 500); " +
-                                "    } else { " +
-                                "      console.log('Option " + optionId + " not found'); " +
                                 "    } " +
-                                "  }, 1500); " +
+                                "  }, 1000); " +
                                 "  return true; " +
                                 "} " +
                                 "return false;"
                 );
 
                 if (result != null && result) {
-                    Thread.sleep(3000); // Wait for all operations to complete
-                    System.out.println("✅ Selected and closed " + selectId + " → " + optionId + " (JS)");
+                    Thread.sleep(3000); // Wait for all actions to complete
+                    System.out.println("✅ Selected " + selectId + " → " + optionId + " (JS)");
                     return true;
                 }
             } catch (Exception e) {
@@ -328,72 +302,115 @@ public class FormFiller {
     }
 
     /**
-     * Add field with dropdown - FIXED version with proper option clicking
+     * FORCE close any open dropdowns - multiple aggressive methods
+     */
+    private static void forceCloseDropdown(WebDriver driver) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Method 1: Click body
+            js.executeScript("document.body.click();");
+            Thread.sleep(300);
+
+            // Method 2: Blur active element
+            js.executeScript("if (document.activeElement) document.activeElement.blur();");
+            Thread.sleep(300);
+
+            // Method 3: Press ESC key
+            js.executeScript("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));");
+            Thread.sleep(300);
+
+            // Method 4: Click on a safe element (page title)
+            js.executeScript(
+                    "var safe = document.querySelector('h1, h2, .page-title, .mat-toolbar'); " +
+                            "if (safe) safe.click();"
+            );
+            Thread.sleep(300);
+
+            // Method 5: Remove any open overlay panels
+            js.executeScript(
+                    "var panels = document.querySelectorAll('.mat-select-panel, .cdk-overlay-pane'); " +
+                            "for (var i = 0; i < panels.length; i++) { " +
+                            "  if (panels[i].style.display !== 'none') { " +
+                            "    panels[i].style.display = 'none'; " +
+                            "  } " +
+                            "}"
+            );
+
+            System.out.println("🔒 Force closed dropdown");
+
+        } catch (Exception e) {
+            System.out.println("Error force closing dropdown: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Add field with dropdown - ENHANCED with better option clicking
      */
     private static boolean addFieldWithDropdown(WebDriver driver, String buttonText, String optionNumber) {
         try {
             System.out.println("🎯 Adding " + buttonText + " with option " + optionNumber);
 
             if (clickButtonRobust(driver, buttonText)) {
-                Thread.sleep(4000); // Longer wait for new dropdown to appear
+                Thread.sleep(3000); // Wait for new dropdown
 
-                // More robust JavaScript approach
+                // Enhanced JavaScript approach for new dropdowns
                 JavascriptExecutor js = (JavascriptExecutor) driver;
+
+                // First, get count of dropdowns to find the newest one
+                Long selectCount = (Long) js.executeScript("return document.querySelectorAll('mat-select').length;");
+                System.out.println("Found " + selectCount + " dropdowns after adding " + buttonText);
+
                 Boolean result = (Boolean) js.executeScript(
-                        "console.log('Looking for newest dropdown after adding " + buttonText + "'); " +
-                                "var selects = document.querySelectorAll('mat-select'); " +
-                                "console.log('Found ' + selects.length + ' total mat-select elements'); " +
+                        "var selects = document.querySelectorAll('mat-select'); " +
+                                "console.log('Total selects found: ' + selects.length); " +
+
                                 "if (selects.length > 0) { " +
                                 "  var newest = selects[selects.length - 1]; " +
                                 "  console.log('Clicking newest dropdown'); " +
                                 "  newest.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
-                                "  " +
-                                "  setTimeout(function() { " +
+
+                                "  // Try clicking trigger first " +
+                                "  var trigger = newest.querySelector('.mat-select-trigger'); " +
+                                "  if (trigger) { " +
+                                "    trigger.click(); " +
+                                "  } else { " +
                                 "    newest.click(); " +
-                                "    console.log('Dropdown clicked, waiting for options'); " +
-                                "    " +
-                                "    setTimeout(function() { " +
-                                "      var option = document.getElementById('mat-option-" + optionNumber + "'); " +
-                                "      if (option) { " +
-                                "        console.log('Found option mat-option-" + optionNumber + ", clicking it'); " +
-                                "        option.click(); " +
-                                "        " +
-                                "        setTimeout(function() { " +
-                                "          console.log('Closing dropdown'); " +
-                                "          document.body.click(); " +
-                                "          // Force close overlays " +
-                                "          var overlays = document.querySelectorAll('.cdk-overlay-pane'); " +
-                                "          for (var i = 0; i < overlays.length; i++) { " +
-                                "            overlays[i].style.display = 'none'; " +
-                                "          } " +
-                                "          console.log('Completed " + buttonText + " selection'); " +
-                                "        }, 500); " +
-                                "      } else { " +
-                                "        console.log('Option mat-option-" + optionNumber + " not found'); " +
-                                "        // List available options for debugging " +
-                                "        var options = document.querySelectorAll('mat-option'); " +
-                                "        console.log('Available options:'); " +
-                                "        for (var i = 0; i < Math.min(options.length, 10); i++) { " +
-                                "          console.log('  ' + options[i].id + ': ' + options[i].textContent); " +
-                                "        } " +
-                                "      } " +
-                                "    }, 2000); " +
-                                "  }, 1000); " +
+                                "  } " +
+
+                                "  // Wait then select option " +
+                                "  setTimeout(function() { " +
+                                "    console.log('Looking for option: mat-option-" + optionNumber + "'); " +
+                                "    var option = document.getElementById('mat-option-" + optionNumber + "'); " +
+                                "    if (option) { " +
+                                "      console.log('Found option, clicking it'); " +
+                                "      option.click(); " +
+                                "      // Force close after selection " +
+                                "      setTimeout(function() { " +
+                                "        document.body.click(); " +
+                                "        document.activeElement.blur(); " +
+                                "        console.log('Closed dropdown'); " +
+                                "      }, 500); " +
+                                "    } else { " +
+                                "      console.log('Option not found!'); " +
+                                "    } " +
+                                "  }, 2000); " +
                                 "  return true; " +
                                 "} " +
-                                "console.log('No dropdowns found'); " +
                                 "return false;"
                 );
 
                 if (result != null && result) {
-                    Thread.sleep(4000); // Wait for all operations to complete
+                    Thread.sleep(4000); // Wait for all actions to complete
+
+                    // Force close any remaining dropdowns
+                    forceCloseDropdown(driver);
+
                     System.out.println("✅ Added " + buttonText + " with option " + optionNumber);
                     return true;
                 } else {
-                    System.out.println("❌ JavaScript returned false for " + buttonText);
+                    System.out.println("❌ JavaScript execution failed for " + buttonText);
                 }
-            } else {
-                System.out.println("❌ Failed to click button: " + buttonText);
             }
 
             System.out.println("❌ Failed to add " + buttonText);
@@ -487,51 +504,54 @@ public class FormFiller {
     }
 
     /**
-     * Select option in the newest dropdown (for multi-field sections like Passport)
+     * Select option from the newest (most recently added) dropdown
      */
     private static boolean selectNewestDropdown(WebDriver driver, String optionNumber) {
         try {
-            System.out.println("🎯 Selecting newest dropdown option: " + optionNumber);
+            System.out.println("🎯 Selecting from newest dropdown: option " + optionNumber);
 
             JavascriptExecutor js = (JavascriptExecutor) driver;
             Boolean result = (Boolean) js.executeScript(
                     "var selects = document.querySelectorAll('mat-select'); " +
+                            "console.log('Found ' + selects.length + ' dropdowns'); " +
+
                             "if (selects.length > 0) { " +
                             "  var newest = selects[selects.length - 1]; " +
-                            "  console.log('Clicking newest dropdown for option " + optionNumber + "'); " +
-                            "  newest.click(); " +
-                            "  " +
+                            "  console.log('Clicking newest dropdown'); " +
+                            "  newest.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
+
+                            "  // Click dropdown " +
+                            "  var trigger = newest.querySelector('.mat-select-trigger'); " +
+                            "  if (trigger) { " +
+                            "    trigger.click(); " +
+                            "  } else { " +
+                            "    newest.click(); " +
+                            "  } " +
+
+                            "  // Wait and select option " +
                             "  setTimeout(function() { " +
                             "    var option = document.getElementById('mat-option-" + optionNumber + "'); " +
                             "    if (option) { " +
-                            "      console.log('Clicking option mat-option-" + optionNumber + "'); " +
                             "      option.click(); " +
-                            "      " +
+                            "      // Force close " +
                             "      setTimeout(function() { " +
                             "        document.body.click(); " +
-                            "        var overlays = document.querySelectorAll('.cdk-overlay-pane'); " +
-                            "        for (var i = 0; i < overlays.length; i++) { " +
-                            "          overlays[i].style.display = 'none'; " +
-                            "        } " +
-                            "        console.log('Closed dropdown after selecting " + optionNumber + "'); " +
-                            "      }, 500); " +
-                            "    } else { " +
-                            "      console.log('Option " + optionNumber + " not found'); " +
+                            "        document.activeElement.blur(); " +
+                            "      }, 300); " +
                             "    } " +
                             "  }, 1500); " +
                             "  return true; " +
                             "} " +
-                            "console.log('No dropdowns found'); " +
                             "return false;"
             );
 
             if (result != null && result) {
-                Thread.sleep(3000);
-                System.out.println("✅ Selected newest dropdown option: " + optionNumber);
+                Thread.sleep(2500);
+                System.out.println("✅ Selected option " + optionNumber + " from newest dropdown");
                 return true;
             }
 
-            System.out.println("❌ Failed to select newest dropdown option: " + optionNumber);
+            System.out.println("❌ Failed to select from newest dropdown");
             return false;
 
         } catch (Exception e) {
@@ -541,37 +561,58 @@ public class FormFiller {
     }
 
     /**
-     * Fill the newest input field (for dynamic fields like SSN)
+     * Select option from the second newest dropdown (for passport country)
      */
-    private static boolean fillNewestInput(WebDriver driver, String value) {
+    private static boolean selectSecondNewestDropdown(WebDriver driver, String optionNumber) {
         try {
-            System.out.println("🎯 Filling newest input with: " + value);
+            System.out.println("🎯 Selecting from second newest dropdown: option " + optionNumber);
 
-            List<WebElement> allInputs = driver.findElements(By.xpath("//input[contains(@class, 'mat-input-element')]"));
-            if (!allInputs.isEmpty()) {
-                WebElement newestInput = allInputs.get(allInputs.size() - 1);
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            Boolean result = (Boolean) js.executeScript(
+                    "var selects = document.querySelectorAll('mat-select'); " +
+                            "console.log('Found ' + selects.length + ' dropdowns for second newest'); " +
 
-                // Highlight the input
-                JavascriptExecutor js = (JavascriptExecutor) driver;
-                js.executeScript("arguments[0].style.border = '3px solid red';", newestInput);
-                js.executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", newestInput);
-                Thread.sleep(1000);
+                            "if (selects.length >= 2) { " +
+                            "  var secondNewest = selects[selects.length - 2]; " +
+                            "  console.log('Clicking second newest dropdown'); " +
+                            "  secondNewest.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
 
-                newestInput.clear();
-                newestInput.sendKeys(value);
+                            "  // Click dropdown " +
+                            "  var trigger = secondNewest.querySelector('.mat-select-trigger'); " +
+                            "  if (trigger) { " +
+                            "    trigger.click(); " +
+                            "  } else { " +
+                            "    secondNewest.click(); " +
+                            "  } " +
 
-                // Remove highlight
-                js.executeScript("arguments[0].style.border = '';", newestInput);
+                            "  // Wait and select option " +
+                            "  setTimeout(function() { " +
+                            "    var option = document.getElementById('mat-option-" + optionNumber + "'); " +
+                            "    if (option) { " +
+                            "      option.click(); " +
+                            "      // Force close " +
+                            "      setTimeout(function() { " +
+                            "        document.body.click(); " +
+                            "        document.activeElement.blur(); " +
+                            "      }, 300); " +
+                            "    } " +
+                            "  }, 1500); " +
+                            "  return true; " +
+                            "} " +
+                            "return false;"
+            );
 
-                System.out.println("✅ Filled newest input: " + value);
+            if (result != null && result) {
+                Thread.sleep(2500);
+                System.out.println("✅ Selected option " + optionNumber + " from second newest dropdown");
                 return true;
-            } else {
-                System.out.println("❌ No input fields found");
-                return false;
             }
 
+            System.out.println("❌ Failed to select from second newest dropdown");
+            return false;
+
         } catch (Exception e) {
-            System.out.println("❌ Error filling newest input: " + e.getMessage());
+            System.out.println("❌ Error selecting second newest dropdown: " + e.getMessage());
             return false;
         }
     }
