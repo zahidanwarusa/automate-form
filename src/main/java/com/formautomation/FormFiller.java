@@ -463,11 +463,11 @@ public class FormFiller {
     }
 
     /**
-     * FIXED newest dropdown selection
+     * FIXED: Direct selection for newest dropdown with proper waiting
      */
-    private static boolean selectNewestDropdownFixed(WebDriver driver, String optionId) {
+    private static boolean selectNewestDropdownDirect(WebDriver driver, String optionId) {
         try {
-            System.out.println("🎯 Selecting newest dropdown → " + optionId);
+            System.out.println("🎯 Direct selecting newest dropdown → " + optionId);
 
             JavascriptExecutor js = (JavascriptExecutor) driver;
 
@@ -493,7 +493,7 @@ public class FormFiller {
                             "          document.body.click();" +
                             "          resolve(true);" +
                             "        }, 500);" +
-                            "      } else if (++attempts > 25) {" +
+                            "      } else if (++attempts > 30) {" +
                             "        clearInterval(checkOption);" +
                             "        resolve(false);" +
                             "      }" +
@@ -502,48 +502,119 @@ public class FormFiller {
                             "});"
             );
 
-            Thread.sleep(2000);
+            Thread.sleep(3000);
+
             if (result != null && result) {
-                System.out.println("✅ Selected newest dropdown → " + optionId);
+                System.out.println("✅ Direct selected newest dropdown → " + optionId);
                 return true;
             }
 
-            System.out.println("❌ Failed to select newest dropdown");
+            System.out.println("❌ Failed direct selection for newest dropdown");
             return false;
 
         } catch (Exception e) {
-            System.err.println("❌ Error selecting newest dropdown: " + e.getMessage());
+            System.err.println("❌ Error in direct newest dropdown selection: " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * FIXED second newest dropdown selection
+     * FIXED: Direct name fields filling with better targeting
      */
-    private static boolean selectSecondNewestDropdownFixed(WebDriver driver, String optionId) {
+    private static boolean fillNameFieldsDirect(WebDriver driver, String lastName, String firstName) {
         try {
-            System.out.println("🎯 Selecting second newest dropdown → " + optionId);
+            System.out.println("Filling name fields directly - Last: " + lastName + ", First: " + firstName);
 
             JavascriptExecutor js = (JavascriptExecutor) driver;
 
             Boolean result = (Boolean) js.executeScript(
                     "return new Promise((resolve) => {" +
+                            "  // Wait for name section to be fully loaded" +
+                            "  setTimeout(() => {" +
+                            "    // Find all visible text inputs that are not readonly or disabled" +
+                            "    var allInputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"])'));" +
+                            "    var visibleInputs = allInputs.filter(input => {" +
+                            "      var rect = input.getBoundingClientRect();" +
+                            "      return rect.width > 0 && rect.height > 0 && input.offsetParent !== null;" +
+                            "    });" +
+                            "    " +
+                            "    // Get the two newest inputs (should be last name and first name)" +
+                            "    if (visibleInputs.length >= 2) {" +
+                            "      var lastNameInput = visibleInputs[visibleInputs.length - 2];" +
+                            "      var firstNameInput = visibleInputs[visibleInputs.length - 1];" +
+                            "      " +
+                            "      // Fill last name" +
+                            "      lastNameInput.focus();" +
+                            "      lastNameInput.value = '" + lastName + "';" +
+                            "      lastNameInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "      lastNameInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "      lastNameInput.blur();" +
+                            "      " +
+                            "      // Small delay between fields" +
+                            "      setTimeout(() => {" +
+                            "        // Fill first name" +
+                            "        firstNameInput.focus();" +
+                            "        firstNameInput.value = '" + firstName + "';" +
+                            "        firstNameInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "        firstNameInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "        firstNameInput.blur();" +
+                            "        resolve(true);" +
+                            "      }, 500);" +
+                            "    } else {" +
+                            "      resolve(false);" +
+                            "    }" +
+                            "  }, 1000);" +
+                            "});"
+            );
+
+            Thread.sleep(2000);
+
+            if (result != null && result) {
+                System.out.println("✅ Filled name fields directly");
+                return true;
+            } else {
+                System.out.println("❌ Failed to fill name fields directly");
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error filling name fields: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * FIXED: Direct phone fields filling with proper sequencing
+     */
+    private static boolean fillPhoneFieldsDirect(WebDriver driver) {
+        try {
+            System.out.println("Filling phone fields directly");
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Step 1: Select phone type (first dropdown)
+            System.out.println("  - Selecting phone type");
+            Boolean typeResult = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
                             "  var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
                             "  if (selects.length < 2) { resolve(false); return; }" +
                             "  " +
-                            "  var secondNewest = selects[selects.length - 2];" +
-                            "  secondNewest.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  var phoneTypeSelect = selects[selects.length - 2];" +
+                            "  phoneTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
                             "  " +
                             "  setTimeout(() => {" +
-                            "    var trigger = secondNewest.querySelector('.mat-select-trigger');" +
-                            "    if (trigger) { trigger.click(); } else { secondNewest.click(); }" +
+                            "    var trigger = phoneTypeSelect.querySelector('.mat-select-trigger');" +
+                            "    if (trigger) { trigger.click(); } else { phoneTypeSelect.click(); }" +
                             "    " +
                             "    var attempts = 0;" +
                             "    var checkOption = setInterval(() => {" +
-                            "      var option = document.getElementById('" + optionId + "');" +
-                            "      if (option && option.offsetParent !== null) {" +
+                            "      // Look for any visible phone type option" +
+                            "      var options = Array.from(document.querySelectorAll('mat-option'));" +
+                            "      var visibleOptions = options.filter(opt => opt.offsetParent !== null);" +
+                            "      " +
+                            "      if (visibleOptions.length > 0) {" +
                             "        clearInterval(checkOption);" +
-                            "        option.click();" +
+                            "        // Select first available option" +
+                            "        visibleOptions[0].click();" +
                             "        setTimeout(() => {" +
                             "          document.body.click();" +
                             "          resolve(true);" +
@@ -557,20 +628,436 @@ public class FormFiller {
                             "});"
             );
 
-            Thread.sleep(2000);
-            if (result != null && result) {
-                System.out.println("✅ Selected second newest dropdown → " + optionId);
-                return true;
+            Thread.sleep(3000);
+            if (!(typeResult != null && typeResult)) {
+                System.out.println("❌ Failed to select phone type");
+                return false;
             }
 
-            System.out.println("❌ Failed to select second newest dropdown");
-            return false;
+            // Step 2: Select phone country (second dropdown)
+            System.out.println("  - Selecting phone country");
+            Boolean countryResult = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "  if (selects.length < 1) { resolve(false); return; }" +
+                            "  " +
+                            "  var phoneCountrySelect = selects[selects.length - 1];" +
+                            "  phoneCountrySelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  " +
+                            "  setTimeout(() => {" +
+                            "    var trigger = phoneCountrySelect.querySelector('.mat-select-trigger');" +
+                            "    if (trigger) { trigger.click(); } else { phoneCountrySelect.click(); }" +
+                            "    " +
+                            "    var attempts = 0;" +
+                            "    var checkOption = setInterval(() => {" +
+                            "      // Look for any visible country option" +
+                            "      var options = Array.from(document.querySelectorAll('mat-option'));" +
+                            "      var visibleOptions = options.filter(opt => opt.offsetParent !== null);" +
+                            "      " +
+                            "      if (visibleOptions.length > 0) {" +
+                            "        clearInterval(checkOption);" +
+                            "        // Select first available option" +
+                            "        visibleOptions[0].click();" +
+                            "        setTimeout(() => {" +
+                            "          document.body.click();" +
+                            "          resolve(true);" +
+                            "        }, 500);" +
+                            "      } else if (++attempts > 25) {" +
+                            "        clearInterval(checkOption);" +
+                            "        resolve(false);" +
+                            "      }" +
+                            "    }, 200);" +
+                            "  }, 1000);" +
+                            "});"
+            );
+
+            Thread.sleep(3000);
+            if (!(countryResult != null && countryResult)) {
+                System.out.println("❌ Failed to select phone country");
+                return false;
+            }
+
+            // Step 3: Fill phone number (newest text input)
+            System.out.println("  - Filling phone number");
+            String phoneNumber = "202" + (1000000 + random.nextInt(9000000));
+            Boolean numberResult = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  setTimeout(() => {" +
+                            "    // Get all visible text inputs" +
+                            "    var allInputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])'));" +
+                            "    var visibleInputs = allInputs.filter(input => {" +
+                            "      var rect = input.getBoundingClientRect();" +
+                            "      return rect.width > 0 && rect.height > 0 && input.offsetParent !== null;" +
+                            "    });" +
+                            "    " +
+                            "    if (visibleInputs.length > 0) {" +
+                            "      var phoneInput = visibleInputs[visibleInputs.length - 1];" +
+                            "      phoneInput.focus();" +
+                            "      phoneInput.value = '" + phoneNumber + "';" +
+                            "      phoneInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "      phoneInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "      phoneInput.blur();" +
+                            "      resolve(true);" +
+                            "    } else {" +
+                            "      resolve(false);" +
+                            "    }" +
+                            "  }, 1000);" +
+                            "});"
+            );
+
+            Thread.sleep(2000);
+
+            if (numberResult != null && numberResult) {
+                System.out.println("✅ Phone fields filled directly");
+                return true;
+            } else {
+                System.out.println("❌ Failed to fill phone number");
+                return false;
+            }
 
         } catch (Exception e) {
-            System.err.println("❌ Error selecting second newest dropdown: " + e.getMessage());
+            System.err.println("❌ Error filling phone fields: " + e.getMessage());
             return false;
         }
     }
+
+    /**
+     * FIXED: Direct alternative communication fields filling
+     */
+    private static boolean fillAlterCommFieldsDirect(WebDriver driver) {
+        try {
+            System.out.println("Filling alternative communication fields directly");
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Step 1: Select communication type
+            System.out.println("  - Selecting communication type");
+            Boolean typeResult = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "  if (selects.length === 0) { resolve(false); return; }" +
+                            "  " +
+                            "  var commTypeSelect = selects[selects.length - 1];" +
+                            "  commTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  " +
+                            "  setTimeout(() => {" +
+                            "    var trigger = commTypeSelect.querySelector('.mat-select-trigger');" +
+                            "    if (trigger) { trigger.click(); } else { commTypeSelect.click(); }" +
+                            "    " +
+                            "    var attempts = 0;" +
+                            "    var checkOption = setInterval(() => {" +
+                            "      // Look for any visible communication type option" +
+                            "      var options = Array.from(document.querySelectorAll('mat-option'));" +
+                            "      var visibleOptions = options.filter(opt => opt.offsetParent !== null);" +
+                            "      " +
+                            "      if (visibleOptions.length > 0) {" +
+                            "        clearInterval(checkOption);" +
+                            "        // Select first available option" +
+                            "        visibleOptions[0].click();" +
+                            "        setTimeout(() => {" +
+                            "          document.body.click();" +
+                            "          resolve(true);" +
+                            "        }, 500);" +
+                            "      } else if (++attempts > 25) {" +
+                            "        clearInterval(checkOption);" +
+                            "        resolve(false);" +
+                            "      }" +
+                            "    }, 200);" +
+                            "  }, 1000);" +
+                            "});"
+            );
+
+            Thread.sleep(3000);
+            if (!(typeResult != null && typeResult)) {
+                System.out.println("❌ Failed to select communication type");
+                return false;
+            }
+
+            // Step 2: Fill communication value
+            System.out.println("  - Filling communication value");
+            String email = "test" + System.currentTimeMillis() + "@example.com";
+            Boolean valueResult = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  setTimeout(() => {" +
+                            "    // Get all visible text inputs" +
+                            "    var allInputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])'));" +
+                            "    var visibleInputs = allInputs.filter(input => {" +
+                            "      var rect = input.getBoundingClientRect();" +
+                            "      return rect.width > 0 && rect.height > 0 && input.offsetParent !== null;" +
+                            "    });" +
+                            "    " +
+                            "    if (visibleInputs.length > 0) {" +
+                            "      var commInput = visibleInputs[visibleInputs.length - 1];" +
+                            "      commInput.focus();" +
+                            "      commInput.value = '" + email + "';" +
+                            "      commInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "      commInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "      commInput.blur();" +
+                            "      resolve(true);" +
+                            "    } else {" +
+                            "      resolve(false);" +
+                            "    }" +
+                            "  }, 1000);" +
+                            "});"
+            );
+
+            Thread.sleep(2000);
+
+            if (valueResult != null && valueResult) {
+                System.out.println("✅ Alternative communication fields filled directly");
+                return true;
+            } else {
+                System.out.println("❌ Failed to fill communication value");
+                return false;
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error filling alternative communication fields: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * COMPLETELY FIXED: Direct address fields filling with proper field ordering
+     */
+    private static boolean fillAddressFieldsDirect(WebDriver driver) {
+        try {
+            System.out.println("Filling address fields directly with proper ordering");
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Step 1: Select address type first
+            System.out.println("  - Step 1: Selecting address type");
+            Boolean typeResult = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "  if (selects.length === 0) { resolve(false); return; }" +
+                            "  " +
+                            "  var addressTypeSelect = selects[selects.length - 1];" +
+                            "  addressTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  " +
+                            "  setTimeout(() => {" +
+                            "    var trigger = addressTypeSelect.querySelector('.mat-select-trigger');" +
+                            "    if (trigger) { trigger.click(); } else { addressTypeSelect.click(); }" +
+                            "    " +
+                            "    var attempts = 0;" +
+                            "    var checkOption = setInterval(() => {" +
+                            "      var options = Array.from(document.querySelectorAll('mat-option'));" +
+                            "      var visibleOptions = options.filter(opt => opt.offsetParent !== null);" +
+                            "      " +
+                            "      if (visibleOptions.length > 0) {" +
+                            "        clearInterval(checkOption);" +
+                            "        visibleOptions[0].click();" +
+                            "        setTimeout(() => {" +
+                            "          document.body.click();" +
+                            "          resolve(true);" +
+                            "        }, 500);" +
+                            "      } else if (++attempts > 25) {" +
+                            "        clearInterval(checkOption);" +
+                            "        resolve(false);" +
+                            "      }" +
+                            "    }, 200);" +
+                            "  }, 1000);" +
+                            "});"
+            );
+
+            Thread.sleep(3000);
+            if (!(typeResult != null && typeResult)) {
+                System.out.println("❌ Failed to select address type");
+                return false;
+            }
+
+            // Step 2: Fill street address (first text input after type selection)
+            System.out.println("  - Step 2: Filling street address");
+            Boolean streetResult = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  setTimeout(() => {" +
+                            "    var allInputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])'));" +
+                            "    var visibleInputs = allInputs.filter(input => {" +
+                            "      var rect = input.getBoundingClientRect();" +
+                            "      return rect.width > 0 && rect.height > 0 && input.offsetParent !== null;" +
+                            "    });" +
+                            "    " +
+                            "    if (visibleInputs.length > 0) {" +
+                            "      var streetInput = visibleInputs[visibleInputs.length - 1];" +
+                            "      streetInput.focus();" +
+                            "      streetInput.value = '123 Test Street';" +
+                            "      streetInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "      streetInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "      streetInput.blur();" +
+                            "      resolve(true);" +
+                            "    } else {" +
+                            "      resolve(false);" +
+                            "    }" +
+                            "  }, 1000);" +
+                            "});"
+            );
+
+            Thread.sleep(2000);
+            if (!(streetResult != null && streetResult)) {
+                System.out.println("❌ Failed to fill street");
+                return false;
+            }
+
+            // Step 3: Fill city (second text input)
+            System.out.println("  - Step 3: Filling city");
+            Boolean cityResult = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  setTimeout(() => {" +
+                            "    var allInputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])'));" +
+                            "    var visibleInputs = allInputs.filter(input => {" +
+                            "      var rect = input.getBoundingClientRect();" +
+                            "      return rect.width > 0 && rect.height > 0 && input.offsetParent !== null;" +
+                            "    });" +
+                            "    " +
+                            "    if (visibleInputs.length > 1) {" +
+                            "      var cityInput = visibleInputs[visibleInputs.length - 1];" +
+                            "      cityInput.focus();" +
+                            "      cityInput.value = 'Washington';" +
+                            "      cityInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "      cityInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "      cityInput.blur();" +
+                            "      resolve(true);" +
+                            "    } else {" +
+                            "      resolve(false);" +
+                            "    }" +
+                            "  }, 1000);" +
+                            "});"
+            );
+
+            Thread.sleep(2000);
+            if (!(cityResult != null && cityResult)) {
+                System.out.println("❌ Failed to fill city");
+                return false;
+            }
+
+            // Step 4: Select state (second dropdown after address type)
+            System.out.println("  - Step 4: Selecting state");
+            Boolean stateResult = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "  if (selects.length < 1) { resolve(false); return; }" +
+                            "  " +
+                            "  var stateSelect = selects[selects.length - 1];" +
+                            "  stateSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  " +
+                            "  setTimeout(() => {" +
+                            "    var trigger = stateSelect.querySelector('.mat-select-trigger');" +
+                            "    if (trigger) { trigger.click(); } else { stateSelect.click(); }" +
+                            "    " +
+                            "    var attempts = 0;" +
+                            "    var checkOption = setInterval(() => {" +
+                            "      var options = Array.from(document.querySelectorAll('mat-option'));" +
+                            "      var visibleOptions = options.filter(opt => opt.offsetParent !== null);" +
+                            "      " +
+                            "      if (visibleOptions.length > 0) {" +
+                            "        clearInterval(checkOption);" +
+                            "        visibleOptions[0].click();" +
+                            "        setTimeout(() => {" +
+                            "          document.body.click();" +
+                            "          resolve(true);" +
+                            "        }, 500);" +
+                            "      } else if (++attempts > 25) {" +
+                            "        clearInterval(checkOption);" +
+                            "        resolve(false);" +
+                            "      }" +
+                            "    }, 200);" +
+                            "  }, 1000);" +
+                            "});"
+            );
+
+            Thread.sleep(4000); // Wait longer for country dropdown to appear
+            if (!(stateResult != null && stateResult)) {
+                System.out.println("❌ Failed to select state");
+                return false;
+            }
+
+            // Step 5: Select country (appears after state selection)
+            System.out.println("  - Step 5: Selecting country");
+            Boolean countryResult = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  setTimeout(() => {" +
+                            "    var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "    if (selects.length < 1) { resolve(false); return; }" +
+                            "    " +
+                            "    var countrySelect = selects[selects.length - 1];" +
+                            "    countrySelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "    " +
+                            "    setTimeout(() => {" +
+                            "      var trigger = countrySelect.querySelector('.mat-select-trigger');" +
+                            "      if (trigger) { trigger.click(); } else { countrySelect.click(); }" +
+                            "      " +
+                            "      var attempts = 0;" +
+                            "      var checkOption = setInterval(() => {" +
+                            "        var options = Array.from(document.querySelectorAll('mat-option'));" +
+                            "        var visibleOptions = options.filter(opt => opt.offsetParent !== null);" +
+                            "        " +
+                            "        if (visibleOptions.length > 0) {" +
+                            "          clearInterval(checkOption);" +
+                            "          visibleOptions[0].click();" +
+                            "          setTimeout(() => {" +
+                            "            document.body.click();" +
+                            "            resolve(true);" +
+                            "          }, 500);" +
+                            "        } else if (++attempts > 25) {" +
+                            "          clearInterval(checkOption);" +
+                            "          resolve(false);" +
+                            "        }" +
+                            "      }, 200);" +
+                            "    }, 1000);" +
+                            "  }, 1000);" +
+                            "});"
+            );
+
+            Thread.sleep(3000);
+            if (!(countryResult != null && countryResult)) {
+                System.out.println("❌ Failed to select country");
+                return false;
+            }
+
+            // Step 6: Fill postal code (final text input)
+            System.out.println("  - Step 6: Filling postal code");
+            Boolean postalResult = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  setTimeout(() => {" +
+                            "    var allInputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])'));" +
+                            "    var visibleInputs = allInputs.filter(input => {" +
+                            "      var rect = input.getBoundingClientRect();" +
+                            "      return rect.width > 0 && rect.height > 0 && input.offsetParent !== null;" +
+                            "    });" +
+                            "    " +
+                            "    if (visibleInputs.length > 0) {" +
+                            "      var postalInput = visibleInputs[visibleInputs.length - 1];" +
+                            "      postalInput.focus();" +
+                            "      postalInput.value = '20001';" +
+                            "      postalInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "      postalInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "      postalInput.blur();" +
+                            "      resolve(true);" +
+                            "    } else {" +
+                            "      resolve(false);" +
+                            "    }" +
+                            "  }, 1000);" +
+                            "});"
+            );
+
+            Thread.sleep(2000);
+
+            if (postalResult != null && postalResult) {
+                System.out.println("✅ Address fields filled directly with proper ordering");
+                return true;
+            } else {
+                System.out.println("❌ Failed to fill postal code");
+                return false;
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error filling address fields: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ==================== OTHER HELPER METHODS (UNCHANGED) ====================
 
     /**
      * FIXED input field filling
@@ -720,407 +1207,6 @@ public class FormFiller {
         }
     }
 
-    // ==================== SPECIFIC SECTION FIXES ====================
-
-    /**
-     * Direct selection for newest dropdown - more reliable for dynamic sections
-     */
-    private static boolean selectNewestDropdownDirect(WebDriver driver, String optionId) {
-        try {
-            System.out.println("🎯 Direct selecting newest dropdown → " + optionId);
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-
-            Boolean result = (Boolean) js.executeScript(
-                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
-                            "if (selects.length === 0) return false;" +
-                            "" +
-                            "var newest = selects[selects.length - 1];" +
-                            "newest.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "" +
-                            "// Click to open dropdown" +
-                            "var trigger = newest.querySelector('.mat-select-trigger');" +
-                            "if (trigger) { trigger.click(); } else { newest.click(); }" +
-                            "" +
-                            "// Wait and select option" +
-                            "setTimeout(function() {" +
-                            "  var option = document.getElementById('" + optionId + "');" +
-                            "  if (option && option.offsetParent !== null) {" +
-                            "    option.click();" +
-                            "    setTimeout(function() { document.body.click(); }, 300);" +
-                            "  }" +
-                            "}, 1500);" +
-                            "" +
-                            "return true;"
-            );
-
-            Thread.sleep(3000); // Wait for completion
-
-            if (result != null && result) {
-                System.out.println("✅ Direct selected newest dropdown → " + optionId);
-                return true;
-            }
-
-            System.out.println("❌ Failed direct selection for newest dropdown");
-            return false;
-
-        } catch (Exception e) {
-            System.err.println("❌ Error in direct newest dropdown selection: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Direct name fields filling
-     */
-    private static boolean fillNameFieldsDirect(WebDriver driver, String lastName, String firstName) {
-        try {
-            System.out.println("Filling name fields directly - Last: " + lastName + ", First: " + firstName);
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-
-            Boolean result = (Boolean) js.executeScript(
-                    "// Find the Names section" +
-                            "var namePanel = document.querySelector('.panel-heading');" +
-                            "var namePanels = Array.from(document.querySelectorAll('.panel-heading'));" +
-                            "var nameSection = null;" +
-                            "" +
-                            "for (var i = 0; i < namePanels.length; i++) {" +
-                            "  if (namePanels[i].textContent.includes('Names')) {" +
-                            "    nameSection = namePanels[i].closest('.panel');" +
-                            "    break;" +
-                            "  }" +
-                            "}" +
-                            "" +
-                            "if (!nameSection) return false;" +
-                            "" +
-                            "// Get all input fields in the name section" +
-                            "var inputs = Array.from(nameSection.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled])'));" +
-                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
-                            "" +
-                            "if (visibleInputs.length >= 2) {" +
-                            "  // Last name (first input)" +
-                            "  visibleInputs[0].focus();" +
-                            "  visibleInputs[0].value = '" + lastName + "';" +
-                            "  visibleInputs[0].dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  visibleInputs[0].dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  visibleInputs[0].blur();" +
-                            "  " +
-                            "  // First name (second input)" +
-                            "  visibleInputs[1].focus();" +
-                            "  visibleInputs[1].value = '" + firstName + "';" +
-                            "  visibleInputs[1].dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  visibleInputs[1].dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  visibleInputs[1].blur();" +
-                            "  " +
-                            "  return true;" +
-                            "}" +
-                            "" +
-                            "return false;"
-            );
-
-            if (result != null && result) {
-                System.out.println("✅ Filled name fields directly");
-                return true;
-            } else {
-                System.out.println("❌ Failed to fill name fields directly");
-                return false;
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Error filling name fields: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Direct phone fields filling
-     */
-    private static boolean fillPhoneFieldsDirect(WebDriver driver) {
-        try {
-            System.out.println("Filling phone fields directly");
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-
-            // First select phone type
-            Boolean typeResult = (Boolean) js.executeScript(
-                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
-                            "if (selects.length < 2) return false;" +
-                            "" +
-                            "var phoneTypeSelect = selects[selects.length - 2];" +
-                            "phoneTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "" +
-                            "var trigger = phoneTypeSelect.querySelector('.mat-select-trigger');" +
-                            "if (trigger) { trigger.click(); } else { phoneTypeSelect.click(); }" +
-                            "" +
-                            "setTimeout(function() {" +
-                            "  var option = document.getElementById('mat-option-" + (1890 + random.nextInt(4)) + "');" +
-                            "  if (option && option.offsetParent !== null) {" +
-                            "    option.click();" +
-                            "    setTimeout(function() { document.body.click(); }, 300);" +
-                            "  }" +
-                            "}, 1500);" +
-                            "" +
-                            "return true;"
-            );
-
-            Thread.sleep(3000);
-
-            // Then select phone country
-            Boolean countryResult = (Boolean) js.executeScript(
-                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
-                            "if (selects.length < 1) return false;" +
-                            "" +
-                            "var phoneCountrySelect = selects[selects.length - 1];" +
-                            "phoneCountrySelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "" +
-                            "var trigger = phoneCountrySelect.querySelector('.mat-select-trigger');" +
-                            "if (trigger) { trigger.click(); } else { phoneCountrySelect.click(); }" +
-                            "" +
-                            "setTimeout(function() {" +
-                            "  var option = document.getElementById('mat-option-1895');" +
-                            "  if (option && option.offsetParent !== null) {" +
-                            "    option.click();" +
-                            "    setTimeout(function() { document.body.click(); }, 300);" +
-                            "  }" +
-                            "}, 1500);" +
-                            "" +
-                            "return true;"
-            );
-
-            Thread.sleep(3000);
-
-            // Finally fill phone number
-            String phoneNumber = "202" + (1000000 + random.nextInt(9000000));
-            Boolean numberResult = (Boolean) js.executeScript(
-                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
-                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
-                            "" +
-                            "if (visibleInputs.length > 0) {" +
-                            "  var phoneInput = visibleInputs[visibleInputs.length - 1];" +
-                            "  phoneInput.focus();" +
-                            "  phoneInput.value = '" + phoneNumber + "';" +
-                            "  phoneInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  phoneInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  phoneInput.blur();" +
-                            "  return true;" +
-                            "}" +
-                            "" +
-                            "return false;"
-            );
-
-            System.out.println("✅ Phone fields filled directly");
-            return true;
-
-        } catch (Exception e) {
-            System.err.println("❌ Error filling phone fields: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Direct alternative communication fields filling
-     */
-    private static boolean fillAlterCommFieldsDirect(WebDriver driver) {
-        try {
-            System.out.println("Filling alternative communication fields directly");
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-
-            // First select communication type
-            Boolean typeResult = (Boolean) js.executeScript(
-                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
-                            "if (selects.length === 0) return false;" +
-                            "" +
-                            "var commTypeSelect = selects[selects.length - 1];" +
-                            "commTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "" +
-                            "var trigger = commTypeSelect.querySelector('.mat-select-trigger');" +
-                            "if (trigger) { trigger.click(); } else { commTypeSelect.click(); }" +
-                            "" +
-                            "setTimeout(function() {" +
-                            "  var option = document.getElementById('mat-option-" + (1900 + random.nextInt(3)) + "');" +
-                            "  if (option && option.offsetParent !== null) {" +
-                            "    option.click();" +
-                            "    setTimeout(function() { document.body.click(); }, 300);" +
-                            "  }" +
-                            "}, 1500);" +
-                            "" +
-                            "return true;"
-            );
-
-            Thread.sleep(3000);
-
-            // Then fill communication value
-            String email = "test" + System.currentTimeMillis() + "@example.com";
-            Boolean valueResult = (Boolean) js.executeScript(
-                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
-                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
-                            "" +
-                            "if (visibleInputs.length > 0) {" +
-                            "  var commInput = visibleInputs[visibleInputs.length - 1];" +
-                            "  commInput.focus();" +
-                            "  commInput.value = '" + email + "';" +
-                            "  commInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  commInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  commInput.blur();" +
-                            "  return true;" +
-                            "}" +
-                            "" +
-                            "return false;"
-            );
-
-            System.out.println("✅ Alternative communication fields filled directly");
-            return true;
-
-        } catch (Exception e) {
-            System.err.println("❌ Error filling alternative communication fields: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Direct address fields filling to prevent field confusion
-     */
-    private static boolean fillAddressFieldsDirect(WebDriver driver) {
-        try {
-            System.out.println("Filling address fields directly to prevent confusion");
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-
-            // Step 1: Select address type
-            System.out.println("  - Selecting address type");
-            Boolean typeResult = (Boolean) js.executeScript(
-                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
-                            "if (selects.length === 0) return false;" +
-                            "" +
-                            "var addressTypeSelect = selects[selects.length - 1];" +
-                            "addressTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "" +
-                            "var trigger = addressTypeSelect.querySelector('.mat-select-trigger');" +
-                            "if (trigger) { trigger.click(); } else { addressTypeSelect.click(); }" +
-                            "" +
-                            "setTimeout(function() {" +
-                            "  var option = document.getElementById('mat-option-" + (1910 + random.nextInt(4)) + "');" +
-                            "  if (option && option.offsetParent !== null) {" +
-                            "    option.click();" +
-                            "    setTimeout(function() { document.body.click(); }, 300);" +
-                            "  }" +
-                            "}, 1500);" +
-                            "" +
-                            "return true;"
-            );
-
-            Thread.sleep(3000);
-
-            // Step 2: Fill street address
-            System.out.println("  - Filling street");
-            js.executeScript(
-                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
-                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
-                            "" +
-                            "if (visibleInputs.length > 0) {" +
-                            "  var streetInput = visibleInputs[visibleInputs.length - 1];" +
-                            "  streetInput.focus();" +
-                            "  streetInput.value = '123 Test Street';" +
-                            "  streetInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  streetInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  streetInput.blur();" +
-                            "}"
-            );
-
-            Thread.sleep(2000);
-
-            // Step 3: Fill city
-            System.out.println("  - Filling city");
-            js.executeScript(
-                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
-                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
-                            "" +
-                            "if (visibleInputs.length > 1) {" +
-                            "  var cityInput = visibleInputs[visibleInputs.length - 1];" +
-                            "  cityInput.focus();" +
-                            "  cityInput.value = 'Washington';" +
-                            "  cityInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  cityInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  cityInput.blur();" +
-                            "}"
-            );
-
-            Thread.sleep(2000);
-
-            // Step 4: Select state
-            System.out.println("  - Selecting state");
-            js.executeScript(
-                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
-                            "if (selects.length > 0) {" +
-                            "  var stateSelect = selects[selects.length - 1];" +
-                            "  stateSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "  " +
-                            "  var trigger = stateSelect.querySelector('.mat-select-trigger');" +
-                            "  if (trigger) { trigger.click(); } else { stateSelect.click(); }" +
-                            "  " +
-                            "  setTimeout(function() {" +
-                            "    var option = document.getElementById('mat-option-1915');" +
-                            "    if (option && option.offsetParent !== null) {" +
-                            "      option.click();" +
-                            "      setTimeout(function() { document.body.click(); }, 300);" +
-                            "    }" +
-                            "  }, 1500);" +
-                            "}"
-            );
-
-            Thread.sleep(4000);
-
-            // Step 5: Select country (appears after state)
-            System.out.println("  - Selecting country");
-            js.executeScript(
-                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
-                            "if (selects.length > 0) {" +
-                            "  var countrySelect = selects[selects.length - 1];" +
-                            "  countrySelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "  " +
-                            "  var trigger = countrySelect.querySelector('.mat-select-trigger');" +
-                            "  if (trigger) { trigger.click(); } else { countrySelect.click(); }" +
-                            "  " +
-                            "  setTimeout(function() {" +
-                            "    var option = document.getElementById('mat-option-1260');" +
-                            "    if (option && option.offsetParent !== null) {" +
-                            "      option.click();" +
-                            "      setTimeout(function() { document.body.click(); }, 300);" +
-                            "    }" +
-                            "  }, 1500);" +
-                            "}"
-            );
-
-            Thread.sleep(3000);
-
-            // Step 6: Fill postal code
-            System.out.println("  - Filling postal code");
-            js.executeScript(
-                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
-                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
-                            "" +
-                            "if (visibleInputs.length > 0) {" +
-                            "  var postalInput = visibleInputs[visibleInputs.length - 1];" +
-                            "  postalInput.focus();" +
-                            "  postalInput.value = '20001';" +
-                            "  postalInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  postalInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  postalInput.blur();" +
-                            "}"
-            );
-
-            System.out.println("✅ Address fields filled directly");
-            return true;
-
-        } catch (Exception e) {
-            System.err.println("❌ Error filling address fields: " + e.getMessage());
-            return false;
-        }
-    }
-
-    // ==================== NEW IMPROVED UTILITY METHODS ====================
-
     /**
      * Simple dropdown selection method - more reliable than Promise-based approach
      */
@@ -1227,33 +1313,6 @@ public class FormFiller {
         } catch (Exception e) {
             System.err.println("Error finding newest select: " + e.getMessage());
             return null;
-        }
-    }
-
-    /**
-     * Find name inputs in order (Last, First, Middle)
-     */
-    @SuppressWarnings("unchecked")
-    private static List<String> findNameInputs(WebDriver driver) {
-        try {
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            List<String> inputIds = (List<String>) js.executeScript(
-                    "var nameSection = document.querySelector('.panel-heading:contains(\"Names\")')?.closest('.panel');" +
-                            "if (!nameSection) return [];" +
-                            "var inputs = Array.from(nameSection.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled])'));" +
-                            "var ids = [];" +
-                            "inputs.forEach((input, index) => {" +
-                            "  if (!input.id) {" +
-                            "    input.id = 'auto-name-' + Date.now() + '-' + index;" +
-                            "  }" +
-                            "  ids.push(input.id);" +
-                            "});" +
-                            "return ids;"
-            );
-            return inputIds != null ? inputIds : new java.util.ArrayList<>();
-        } catch (Exception e) {
-            System.err.println("Error finding name inputs: " + e.getMessage());
-            return new java.util.ArrayList<>();
         }
     }
 
@@ -1428,32 +1487,6 @@ public class FormFiller {
     }
 
     /**
-     * Find newest input by position
-     */
-    private static String findNewestInput(WebDriver driver, int position) {
-        try {
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            String inputId = (String) js.executeScript(
-                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled])'));" +
-                            "var visibleInputs = inputs.filter(i => i.offsetWidth > 0 && i.offsetHeight > 0);" +
-                            "var targetIndex = visibleInputs.length - 1 - " + position + ";" +
-                            "if (targetIndex >= 0 && targetIndex < visibleInputs.length) {" +
-                            "  var input = visibleInputs[targetIndex];" +
-                            "  if (!input.id) {" +
-                            "    input.id = 'auto-input-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);" +
-                            "  }" +
-                            "  return input.id;" +
-                            "}" +
-                            "return null;"
-            );
-            return inputId;
-        } catch (Exception e) {
-            System.err.println("Error finding newest input: " + e.getMessage());
-            return null;
-        }
-    }
-
-    /**
      * Find date input by mask
      */
     private static String findDateInputByMask(WebDriver driver, String mask, int position) {
@@ -1475,32 +1508,6 @@ public class FormFiller {
             return inputId;
         } catch (Exception e) {
             System.err.println("Error finding date input: " + e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Find input by mask
-     */
-    private static String findInputByMask(WebDriver driver, String mask, int position) {
-        try {
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            String inputId = (String) js.executeScript(
-                    "var inputs = Array.from(document.querySelectorAll('input[mask=\"" + mask + "\"]'));" +
-                            "var visibleInputs = inputs.filter(i => i.offsetWidth > 0 && i.offsetHeight > 0);" +
-                            "var targetIndex = visibleInputs.length - 1 - " + position + ";" +
-                            "if (targetIndex >= 0 && targetIndex < visibleInputs.length) {" +
-                            "  var input = visibleInputs[targetIndex];" +
-                            "  if (!input.id) {" +
-                            "    input.id = 'auto-mask-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);" +
-                            "  }" +
-                            "  return input.id;" +
-                            "}" +
-                            "return null;"
-            );
-            return inputId;
-        } catch (Exception e) {
-            System.err.println("Error finding input by mask: " + e.getMessage());
             return null;
         }
     }
