@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Clean FormFiller - Keep what works, fix interception issues
+ * Enhanced FormFiller with robust dropdown handling and complete field coverage
  */
 public class FormFiller {
     private static final Random random = new Random();
@@ -24,7 +24,7 @@ public class FormFiller {
         try {
             System.out.println("Filling out first page...");
 
-            // Fill basic fields (WORKING)
+            // Fill basic fields
             System.out.println("Filling last name: " + data.getLastName());
             waitAndSendKeys(driver, By.id("lastName"), data.getLastName());
 
@@ -34,17 +34,17 @@ public class FormFiller {
             System.out.println("Filling DOB: " + data.getDob());
             waitAndSendKeys(driver, By.id("dob"), data.getDob());
 
-            // Click search (WORKING)
+            // Click search
             System.out.println("Clicking SEARCH button...");
             if (!clickButtonSimple(driver, "Search")) {
                 System.out.println("Search button not found, continuing...");
             }
 
-            // Wait for search results (WORKING)
+            // Wait for search results
             System.out.println("Waiting for search results to load...");
             Thread.sleep(8000);
 
-            // Handle tab switching (WORKING)
+            // Handle tab switching
             String originalWindow = driver.getWindowHandle();
             System.out.println("Original window handle: " + originalWindow);
 
@@ -54,7 +54,7 @@ public class FormFiller {
                 return false;
             }
 
-            // Switch tabs if needed (WORKING)
+            // Switch tabs if needed
             Thread.sleep(5000);
             if (driver.getWindowHandles().size() > 1) {
                 System.out.println("New tab detected! Switching to new tab...");
@@ -80,7 +80,7 @@ public class FormFiller {
     }
 
     /**
-     * Fill second page - ROBUST approach for interception issues
+     * Fill second page - COMPLETE implementation with robust dropdown handling
      */
     public static boolean fillSecondPage(WebDriver driver, PersonData data) {
         try {
@@ -91,335 +91,676 @@ public class FormFiller {
             // Wait for page load
             Thread.sleep(10000);
 
-            // === MAIN DROPDOWNS (WORKING) ===
-            System.out.println("1. First dropdown (OB - OUTBOUND SUBJECT)");
-            selectDropdown(driver, "mat-select-4", "mat-option-68");
+            // === MAIN DROPDOWNS ===
+            System.out.println("\n=== FILLING MAIN DROPDOWNS ===");
 
-            System.out.println("2. Second dropdown (AB - AG/BIO COUNTERMEASURES)");
-            selectDropdown(driver, "mat-select-10", "mat-option-549");
+            System.out.println("1. Record Status dropdown (OB - OUTBOUND SUBJECT)");
+            selectDropdownEnhanced(driver, "mat-select-4", "mat-option-68");
 
-            System.out.println("3. Third dropdown (0 - NO NOTIFICATION)");
-            selectDropdown(driver, "mat-select-6", "mat-option-238");
+            System.out.println("2. Category dropdown (AB - AG/BIO COUNTERMEASURES)");
+            selectDropdownEnhanced(driver, "mat-select-10", "mat-option-549");
 
-            System.out.println("4. Fourth dropdown (Multiple)");
-            int randomOption = 253 + random.nextInt(6);
-            selectDropdown(driver, "mat-select-12", "mat-option-" + randomOption);
+            System.out.println("3. Query Notification dropdown (0 - NO NOTIFICATION)");
+            selectDropdownEnhanced(driver, "mat-select-6", "mat-option-238");
 
-            System.out.println("5. Fifth dropdown (0 - NOT ON PRIMARY)");
-            selectDropdown(driver, "mat-select-8", "mat-option-242");
+            System.out.println("4. Exclusions dropdown (Multiple - ANCX)");
+            selectDropdownEnhanced(driver, "mat-select-12", "mat-option-253");
 
-            // === FORM FIELDS (WORKING) ===
-            System.out.println("6. Filling remarks");
-            fillInput(driver, "mat-input-1", "Automated test entry - " + System.currentTimeMillis());
+            System.out.println("5. Primary Action dropdown (4 - REFER TO PASSPORT CONTROL)");
+            selectDropdownEnhanced(driver, "mat-select-8", "mat-option-245");
 
-            System.out.println("7. Y/N dropdown");
-            selectDropdown(driver, "mat-select-0", "mat-option-2");
+            // Since we selected option 245 (not 242), we need to fill primary dates
+            System.out.println("5a. Filling Primary Start Date");
+            String primaryStartDate = generatePastDate(30, 365); // 30 days to 1 year ago
+            fillInput(driver, "mat-input-4", primaryStartDate);
 
-            System.out.println("8. Height dropdown");
-            int randomHeight = 8 + random.nextInt(20);
-            selectDropdown(driver, "mat-select-2", "mat-option-" + randomHeight);
+            System.out.println("5b. Filling Primary End Date");
+            String primaryEndDate = generateFutureDate(30, 365); // 30 days to 1 year from now
+            fillInput(driver, "mat-input-5", primaryEndDate);
 
-            System.out.println("9. Weight field");
-            String weight = String.valueOf(120 + random.nextInt(131));
-            fillInput(driver, "mat-input-0", weight);
+            // If there's an Exclusion Site dropdown (appears after selecting exclusion)
+            System.out.println("6. Exclusion Site dropdown (if present)");
+            selectDropdownIfPresent(driver, "mat-select-25", "mat-option-627"); // PRS - PARIS
 
-            // === ADD SECTIONS (FIX INTERCEPTION) ===
-            System.out.println("10. Adding Sex");
-            addFieldWithDropdown(driver, "Add Sex", random.nextBoolean() ? "630" : "631");
+            // === FORM FIELDS ===
+            System.out.println("\n=== FILLING TEXT FIELDS ===");
 
-            System.out.println("11. Adding Race");
-            int raceOption = 594 + random.nextInt(6);
-            addFieldWithDropdown(driver, "Add Race", String.valueOf(raceOption));
+            System.out.println("7. Filling remarks");
+            fillTextarea(driver, "mat-input-1",
+                    "Automated test entry - Subject under review - Generated at " + System.currentTimeMillis());
 
-            System.out.println("12. Adding Eye Color");
-            int eyeOption = 600 + random.nextInt(12);
-            addFieldWithDropdown(driver, "Add Eye Color", String.valueOf(eyeOption));
+            // === PHYSICAL DESCRIPTIONS ===
+            System.out.println("\n=== FILLING PHYSICAL DESCRIPTIONS ===");
 
-            System.out.println("13. Adding Hair Color");
-            int hairOption = 612 + random.nextInt(15);
-            addFieldWithDropdown(driver, "Add Hair Color", String.valueOf(hairOption));
+            System.out.println("8. Hispanic dropdown");
+            selectDropdownEnhanced(driver, "mat-select-0", "mat-option-2"); // Y - Yes
 
-            System.out.println("14. Adding Name");
+            System.out.println("9. Height dropdown");
+            String heightOption = data.getHeight(); // e.g., "5' 10\""
+            selectHeightDropdown(driver, "mat-select-2", heightOption);
+
+            System.out.println("10. Weight field");
+            fillInput(driver, "mat-input-0", data.getWeight());
+
+            // === ADD SECTIONS - Enhanced with proper waiting ===
+            System.out.println("\n=== ADDING DYNAMIC SECTIONS ===");
+
+            System.out.println("11. Adding Sex");
+            addFieldWithEnhancedDropdown(driver, "Add Sex", "mat-select-24",
+                    random.nextBoolean() ? "mat-option-630" : "mat-option-631"); // F or M
+
+            System.out.println("12. Adding Race");
+            String raceOption = "mat-option-" + (594 + random.nextInt(6));
+            addFieldWithEnhancedDropdown(driver, "Add Race", "mat-select-18", raceOption);
+
+            System.out.println("13. Adding Eye Color");
+            String eyeOption = "mat-option-" + (600 + random.nextInt(12));
+            addFieldWithEnhancedDropdown(driver, "Add Eye Color", "mat-select-20", eyeOption);
+
+            System.out.println("14. Adding Hair Color");
+            String hairOption = "mat-option-" + (612 + random.nextInt(15));
+            addFieldWithEnhancedDropdown(driver, "Add Hair Color", "mat-select-22", hairOption);
+
+            // === NAME SECTION ===
+            System.out.println("\n15. Adding Name");
             if (clickButtonRobust(driver, "Add Name")) {
-                Thread.sleep(3000);
+                Thread.sleep(2000);
                 fillInput(driver, "mat-input-2", data.getLastName());
                 fillInput(driver, "mat-input-3", data.getFirstName());
+                // Middle name is optional - mat-input-7
             }
 
-            System.out.println("15. Adding DOB");
+            // === DATE OF BIRTH ===
+            System.out.println("\n16. Adding DOB");
             if (clickButtonRobust(driver, "Add DOB")) {
-                Thread.sleep(3000);
-                fillInput(driver, "mat-input-11", data.getDob());
+                Thread.sleep(2000);
+                fillDateInput(driver, "mat-input-11", data.getDob());
             }
 
-            System.out.println("16. Adding Citizenship");
-            addFieldWithDropdown(driver, "Add Citizenship", "1260");
+            // === CITIZENSHIP ===
+            System.out.println("\n17. Adding Citizenship");
+            addFieldWithEnhancedDropdown(driver, "Add Citizenship", "mat-select-34", "mat-option-1260"); // USA
 
-            System.out.println("17. Adding Passport");
+            // === PASSPORT ===
+            System.out.println("\n18. Adding Passport");
             if (clickButtonRobust(driver, "Add Passport")) {
                 Thread.sleep(3000);
 
-                // Passport has multiple fields - handle them step by step
+                // Passport Type
                 System.out.println("  - Selecting passport type");
-                if (selectNewestDropdown(driver, "1518")) { // P - Regular
-                    Thread.sleep(1000);
-                }
+                selectDropdownByPosition(driver, 0, "mat-option-1518"); // P - Regular
 
+                // Passport Number
                 System.out.println("  - Filling passport number");
-                fillInput(driver, "mat-input-19", data.getPassportNumber());
-                Thread.sleep(1000);
+                fillInputByPosition(driver, 0, data.getPassportNumber());
 
+                // Passport Country
                 System.out.println("  - Selecting passport country");
-                if (selectSecondNewestDropdown(driver, "1520")) { // USA
-                    Thread.sleep(1000);
-                }
+                selectDropdownByPosition(driver, 1, "mat-option-1520"); // USA
 
+                // Passport Issue Date
                 System.out.println("  - Filling passport issue date");
-                fillInput(driver, "mat-input-20", data.getPassportIssueDate());
-                Thread.sleep(1000);
+                fillDateInputByPosition(driver, 0, data.getPassportIssueDate());
 
+                // Passport Expiry Date
                 System.out.println("  - Filling passport expiry date");
-                fillInput(driver, "mat-input-21", data.getPassportExpiryDate());
+                fillDateInputByPosition(driver, 1, data.getPassportExpiryDate());
             }
 
-            System.out.println("18. Adding A#");
+            // === A NUMBER ===
+            System.out.println("\n19. Adding A#");
             if (clickButtonRobust(driver, "Add A#")) {
-                Thread.sleep(3000);
+                Thread.sleep(2000);
                 fillInput(driver, "mat-input-22", data.getaNumber());
             }
 
-            System.out.println("19. Adding Drivers License");
-            if (clickButtonRobust(driver, "Drivers License")) { // Avoid apostrophe
+            // === DRIVER'S LICENSE ===
+            System.out.println("\n20. Adding Driver's License");
+            if (clickButtonRobust(driver, "Add Driver")) { // Shorter text to avoid apostrophe issues
                 Thread.sleep(3000);
 
+                // License Number
                 System.out.println("  - Filling license number");
                 fillInput(driver, "mat-input-23", data.getDriverLicense());
-                Thread.sleep(1000);
 
+                // License State
                 System.out.println("  - Selecting state");
-                int stateOption = 1774 + random.nextInt(62); // Random US state
-                selectNewestDropdown(driver, String.valueOf(stateOption));
+                String stateOption = "mat-option-" + (1774 + random.nextInt(62)); // Random US state
+                selectDropdownByPosition(driver, 0, stateOption);
             }
 
-            System.out.println("20. Adding SSN");
+            // === SSN ===
+            System.out.println("\n21. Adding SSN");
             if (clickButtonRobust(driver, "Add SSN")) {
-                Thread.sleep(3000);
-                // Find newest input - SSN is always the last input added
-                List<WebElement> allInputs = driver.findElements(By.xpath("//input[contains(@class, 'mat-input-element')]"));
-                if (!allInputs.isEmpty()) {
-                    WebElement ssnInput = allInputs.get(allInputs.size() - 1);
-                    ssnInput.clear();
-                    ssnInput.sendKeys(data.getSsn());
-                    System.out.println("✅ SSN filled: " + data.getSsn());
-                } else {
-                    System.out.println("❌ SSN input not found");
-                }
+                Thread.sleep(2000);
+                fillSSNInput(driver, data.getSsn());
             }
 
-            // Final cleanup - close any remaining open dropdowns
-            System.out.println("21. Final cleanup");
-            forceCloseDropdown(driver);
+            // === ADDITIONAL FIELDS (from page2.txt analysis) ===
+            System.out.println("\n=== ADDING ADDITIONAL FIELDS ===");
+
+            // === MISC NUMBER ===
+            System.out.println("\n22. Adding Misc Number");
+            if (clickButtonRobust(driver, "Add Misc")) {
+                Thread.sleep(3000);
+
+                // Misc Type dropdown
+                selectDropdownByPosition(driver, 0, "mat-option-" + (1885 + random.nextInt(5)));
+
+                // Misc Number
+                String miscNumber = "MISC" + (100000 + random.nextInt(900000));
+                fillInputByPosition(driver, 0, miscNumber);
+            }
+
+            // === PHONE NUMBER ===
+            System.out.println("\n23. Adding Phone Number");
+            if (clickButtonRobust(driver, "Add Phone")) {
+                Thread.sleep(3000);
+
+                // Phone Type
+                selectDropdownByPosition(driver, 0, "mat-option-" + (1890 + random.nextInt(4)));
+
+                // Phone Country
+                selectDropdownByPosition(driver, 1, "mat-option-1895"); // USA
+
+                // Phone Number
+                String phoneNumber = "202" + (1000000 + random.nextInt(9000000));
+                fillInputByPosition(driver, 0, phoneNumber);
+            }
+
+            // === ALTERNATIVE COMMUNICATIONS ===
+            System.out.println("\n24. Adding Alternative Communication");
+            if (clickButtonRobust(driver, "Add Alter")) {
+                Thread.sleep(3000);
+
+                // Communication Type
+                selectDropdownByPosition(driver, 0, "mat-option-" + (1900 + random.nextInt(3)));
+
+                // Communication Value
+                String email = "test" + System.currentTimeMillis() + "@example.com";
+                fillInputByPosition(driver, 0, email);
+            }
+
+            // === ADDRESS ===
+            System.out.println("\n25. Adding Address");
+            if (clickButtonRobust(driver, "Add Address")) {
+                Thread.sleep(3000);
+
+                // Address Type
+                selectDropdownByPosition(driver, 0, "mat-option-" + (1910 + random.nextInt(4)));
+
+                // Street
+                fillInputByPosition(driver, 0, "123 Test Street");
+
+                // City
+                fillInputByPosition(driver, 1, "Washington");
+
+                // State (if US address)
+                selectDropdownByPosition(driver, 1, "mat-option-1915"); // DC
+
+                // Country
+                selectDropdownByPosition(driver, 2, "mat-option-1260"); // USA
+
+                // Postal Code
+                fillInputByPosition(driver, 2, "20001");
+            }
+
+            // === FINANCIAL ACCOUNT ===
+            System.out.println("\n26. Adding Financial Account");
+            if (clickButtonRobust(driver, "Add Financial")) {
+                Thread.sleep(3000);
+
+                // Institution
+                fillInputByPosition(driver, 0, "Test Bank");
+
+                // Branch
+                fillInputByPosition(driver, 1, "Main Branch");
+
+                // Officer Name
+                fillInputByPosition(driver, 2, "John Doe");
+
+                // Account Number
+                fillInputByPosition(driver, 3, "ACC" + (100000 + random.nextInt(900000)));
+
+                // Account Type
+                fillInputByPosition(driver, 4, "Checking");
+
+                // Financial ID
+                fillInputByPosition(driver, 5, "FIN" + (1000 + random.nextInt(9000)));
+
+                // Date (using date picker)
+                fillDateInputByPosition(driver, 0, generatePastDate(30, 365));
+            }
+
+            // Final cleanup
+            System.out.println("\n27. Final cleanup - ensuring all dropdowns are closed");
+            ensureAllDropdownsClosed(driver);
             Thread.sleep(2000);
 
-            System.out.println("Second page completed successfully!");
+            // Try to submit the form (if submit button is enabled)
+            System.out.println("\n28. Checking for SUBMIT button");
+            checkAndClickSubmit(driver);
+
+            System.out.println("\n✅ Second page completed successfully!");
             return true;
 
         } catch (Exception e) {
-            System.out.println("Error filling second page: " + e.getMessage());
+            System.out.println("❌ Error filling second page: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
     /**
-     * ROBUST dropdown selection - handles interception with FORCED closure
+     * Enhanced dropdown selection with guaranteed closure
      */
-    private static boolean selectDropdown(WebDriver driver, String selectId, String optionId) {
+    private static boolean selectDropdownEnhanced(WebDriver driver, String selectId, String optionId) {
         try {
-            System.out.println("🎯 Selecting " + selectId + " → " + optionId);
+            System.out.println("🎯 Enhanced selection: " + selectId + " → " + optionId);
 
-            // Method 1: Try standard approach with aggressive closing
-            try {
-                WebElement matSelect = driver.findElement(By.id(selectId));
-                matSelect.click();
-                Thread.sleep(1500);
-
-                WebElement option = driver.findElement(By.id(optionId));
-                option.click();
-                Thread.sleep(500);
-
-                // AGGRESSIVE dropdown closing - try multiple methods
-                forceCloseDropdown(driver);
-
-                System.out.println("✅ Selected " + selectId + " → " + optionId);
-                return true;
-            } catch (Exception e) {
-                System.out.println("Standard approach failed: " + e.getMessage());
-            }
-
-            // Method 2: JavaScript approach for interception with forced close
-            try {
-                JavascriptExecutor js = (JavascriptExecutor) driver;
-                Boolean result = (Boolean) js.executeScript(
-                        "var select = document.getElementById('" + selectId + "'); " +
-                                "if (select) { " +
-                                "  select.click(); " +
-                                "  setTimeout(function() { " +
-                                "    var option = document.getElementById('" + optionId + "'); " +
-                                "    if (option) { " +
-                                "      option.click(); " +
-                                "      // Force close dropdown multiple ways " +
-                                "      setTimeout(function() { " +
-                                "        document.body.click(); " +
-                                "        document.activeElement.blur(); " +
-                                "        // Click somewhere safe " +
-                                "        var safe = document.querySelector('h1, h2, .page-title'); " +
-                                "        if (safe) safe.click(); " +
-                                "      }, 500); " +
-                                "    } " +
-                                "  }, 1000); " +
-                                "  return true; " +
-                                "} " +
-                                "return false;"
-                );
-
-                if (result != null && result) {
-                    Thread.sleep(3000); // Wait for all actions to complete
-                    System.out.println("✅ Selected " + selectId + " → " + optionId + " (JS)");
-                    return true;
-                }
-            } catch (Exception e) {
-                System.out.println("JavaScript approach failed: " + e.getMessage());
-            }
-
-            System.out.println("❌ Failed to select " + selectId);
-            return false;
-
-        } catch (Exception e) {
-            System.out.println("❌ Error selecting dropdown: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * FORCE close any open dropdowns - multiple aggressive methods
-     */
-    private static void forceCloseDropdown(WebDriver driver) {
-        try {
             JavascriptExecutor js = (JavascriptExecutor) driver;
 
-            // Method 1: Click body
-            js.executeScript("document.body.click();");
-            Thread.sleep(300);
+            // First ensure any open dropdowns are closed
+            ensureAllDropdownsClosed(driver);
+            Thread.sleep(500);
 
-            // Method 2: Blur active element
-            js.executeScript("if (document.activeElement) document.activeElement.blur();");
-            Thread.sleep(300);
-
-            // Method 3: Press ESC key
-            js.executeScript("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));");
-            Thread.sleep(300);
-
-            // Method 4: Click on a safe element (page title)
-            js.executeScript(
-                    "var safe = document.querySelector('h1, h2, .page-title, .mat-toolbar'); " +
-                            "if (safe) safe.click();"
+            // Execute the dropdown selection with guaranteed closure
+            Boolean result = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  console.log('Starting dropdown selection: " + selectId + "');" +
+                            "  " +
+                            "  // Find the select element" +
+                            "  var select = document.getElementById('" + selectId + "');" +
+                            "  if (!select) {" +
+                            "    console.error('Select not found: " + selectId + "');" +
+                            "    resolve(false);" +
+                            "    return;" +
+                            "  }" +
+                            "  " +
+                            "  // Scroll into view and click" +
+                            "  select.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  " +
+                            "  // Click the select to open dropdown" +
+                            "  setTimeout(() => {" +
+                            "    select.click();" +
+                            "    console.log('Clicked select, waiting for panel...');" +
+                            "    " +
+                            "    // Wait for panel to appear and select option" +
+                            "    setTimeout(() => {" +
+                            "      var option = document.getElementById('" + optionId + "');" +
+                            "      if (option) {" +
+                            "        console.log('Found option, clicking: " + optionId + "');" +
+                            "        option.click();" +
+                            "        " +
+                            "        // CRITICAL: Force close the dropdown after selection" +
+                            "        setTimeout(() => {" +
+                            "          // Method 1: Click body" +
+                            "          document.body.click();" +
+                            "          " +
+                            "          // Method 2: Press Escape" +
+                            "          var escEvent = new KeyboardEvent('keydown', {" +
+                            "            key: 'Escape'," +
+                            "            keyCode: 27," +
+                            "            bubbles: true" +
+                            "          });" +
+                            "          document.dispatchEvent(escEvent);" +
+                            "          " +
+                            "          // Method 3: Remove overlay backdrop" +
+                            "          var backdrop = document.querySelector('.cdk-overlay-backdrop');" +
+                            "          if (backdrop) backdrop.click();" +
+                            "          " +
+                            "          // Method 4: Hide all panels" +
+                            "          var panels = document.querySelectorAll('.mat-select-panel');" +
+                            "          panels.forEach(p => p.style.display = 'none');" +
+                            "          " +
+                            "          console.log('Dropdown closed');" +
+                            "          resolve(true);" +
+                            "        }, 500);" +
+                            "      } else {" +
+                            "        console.error('Option not found: " + optionId + "');" +
+                            "        // Still close dropdown even if option not found" +
+                            "        document.body.click();" +
+                            "        resolve(false);" +
+                            "      }" +
+                            "    }, 1500);" +
+                            "  }, 500);" +
+                            "});"
             );
-            Thread.sleep(300);
 
-            // Method 5: Remove any open overlay panels
-            js.executeScript(
-                    "var panels = document.querySelectorAll('.mat-select-panel, .cdk-overlay-pane'); " +
-                            "for (var i = 0; i < panels.length; i++) { " +
-                            "  if (panels[i].style.display !== 'none') { " +
-                            "    panels[i].style.display = 'none'; " +
-                            "  } " +
-                            "}"
-            );
+            // Wait extra time to ensure closure
+            Thread.sleep(2500);
 
-            System.out.println("🔒 Force closed dropdown");
+            if (result != null && result) {
+                System.out.println("✅ Successfully selected and closed: " + selectId);
+                return true;
+            } else {
+                System.out.println("❌ Failed to select: " + selectId);
+                return false;
+            }
 
         } catch (Exception e) {
-            System.out.println("Error force closing dropdown: " + e.getMessage());
+            System.out.println("❌ Error in enhanced selection: " + e.getMessage());
+            return false;
         }
     }
 
     /**
-     * Add field with dropdown - ENHANCED with better option clicking
+     * Add field with enhanced dropdown handling - specifically for dynamically added fields
      */
-    private static boolean addFieldWithDropdown(WebDriver driver, String buttonText, String optionNumber) {
+    private static boolean addFieldWithEnhancedDropdown(WebDriver driver, String buttonText,
+                                                        String expectedSelectId, String optionId) {
         try {
-            System.out.println("🎯 Adding " + buttonText + " with option " + optionNumber);
+            System.out.println("🎯 Adding " + buttonText + " with enhanced dropdown");
 
-            if (clickButtonRobust(driver, buttonText)) {
-                Thread.sleep(3000); // Wait for new dropdown
-
-                // Enhanced JavaScript approach for new dropdowns
-                JavascriptExecutor js = (JavascriptExecutor) driver;
-
-                // First, get count of dropdowns to find the newest one
-                Long selectCount = (Long) js.executeScript("return document.querySelectorAll('mat-select').length;");
-                System.out.println("Found " + selectCount + " dropdowns after adding " + buttonText);
-
-                Boolean result = (Boolean) js.executeScript(
-                        "var selects = document.querySelectorAll('mat-select'); " +
-                                "console.log('Total selects found: ' + selects.length); " +
-
-                                "if (selects.length > 0) { " +
-                                "  var newest = selects[selects.length - 1]; " +
-                                "  console.log('Clicking newest dropdown'); " +
-                                "  newest.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
-
-                                "  // Try clicking trigger first " +
-                                "  var trigger = newest.querySelector('.mat-select-trigger'); " +
-                                "  if (trigger) { " +
-                                "    trigger.click(); " +
-                                "  } else { " +
-                                "    newest.click(); " +
-                                "  } " +
-
-                                "  // Wait then select option " +
-                                "  setTimeout(function() { " +
-                                "    console.log('Looking for option: mat-option-" + optionNumber + "'); " +
-                                "    var option = document.getElementById('mat-option-" + optionNumber + "'); " +
-                                "    if (option) { " +
-                                "      console.log('Found option, clicking it'); " +
-                                "      option.click(); " +
-                                "      // Force close after selection " +
-                                "      setTimeout(function() { " +
-                                "        document.body.click(); " +
-                                "        document.activeElement.blur(); " +
-                                "        console.log('Closed dropdown'); " +
-                                "      }, 500); " +
-                                "    } else { " +
-                                "      console.log('Option not found!'); " +
-                                "    } " +
-                                "  }, 2000); " +
-                                "  return true; " +
-                                "} " +
-                                "return false;"
-                );
-
-                if (result != null && result) {
-                    Thread.sleep(4000); // Wait for all actions to complete
-
-                    // Force close any remaining dropdowns
-                    forceCloseDropdown(driver);
-
-                    System.out.println("✅ Added " + buttonText + " with option " + optionNumber);
-                    return true;
-                } else {
-                    System.out.println("❌ JavaScript execution failed for " + buttonText);
-                }
+            // Click the add button
+            if (!clickButtonRobust(driver, buttonText)) {
+                return false;
             }
 
-            System.out.println("❌ Failed to add " + buttonText);
-            return false;
+            Thread.sleep(3000); // Wait for new field to appear
+
+            // Use the expected select ID if available, otherwise find newest
+            if (expectedSelectId != null && !expectedSelectId.isEmpty()) {
+                return selectDropdownEnhanced(driver, expectedSelectId, optionId);
+            } else {
+                // Fallback to position-based selection
+                return selectDropdownByPosition(driver, 0, optionId);
+            }
 
         } catch (Exception e) {
-            System.out.println("❌ Error adding " + buttonText + ": " + e.getMessage());
+            System.out.println("❌ Error adding field with dropdown: " + e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Select dropdown by position (for dynamically added fields)
+     */
+    private static boolean selectDropdownByPosition(WebDriver driver, int position, String optionId) {
+        try {
+            System.out.println("🎯 Selecting dropdown at position " + position + " → " + optionId);
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Ensure dropdowns are closed first
+            ensureAllDropdownsClosed(driver);
+            Thread.sleep(500);
+
+            Boolean result = (Boolean) js.executeScript(
+                    "return new Promise((resolve) => {" +
+                            "  var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
+                            "  console.log('Found ' + selects.length + ' active dropdowns');" +
+                            "  " +
+                            "  // Get dropdowns from bottom (newest first)" +
+                            "  var targetSelect = selects[selects.length - 1 - " + position + "];" +
+                            "  if (!targetSelect) {" +
+                            "    console.error('No dropdown at position " + position + "');" +
+                            "    resolve(false);" +
+                            "    return;" +
+                            "  }" +
+                            "  " +
+                            "  // Click to open" +
+                            "  targetSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  targetSelect.click();" +
+                            "  " +
+                            "  // Wait and select option" +
+                            "  setTimeout(() => {" +
+                            "    var option = document.getElementById('" + optionId + "');" +
+                            "    if (option) {" +
+                            "      option.click();" +
+                            "      " +
+                            "      // Force close" +
+                            "      setTimeout(() => {" +
+                            "        document.body.click();" +
+                            "        var escEvent = new KeyboardEvent('keydown', {key: 'Escape', keyCode: 27, bubbles: true});" +
+                            "        document.dispatchEvent(escEvent);" +
+                            "        resolve(true);" +
+                            "      }, 500);" +
+                            "    } else {" +
+                            "      console.error('Option not found: " + optionId + "');" +
+                            "      document.body.click();" +
+                            "      resolve(false);" +
+                            "    }" +
+                            "  }, 1500);" +
+                            "});"
+            );
+
+            Thread.sleep(2500);
+            return result != null && result;
+
+        } catch (Exception e) {
+            System.out.println("❌ Error selecting by position: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Ensure all dropdowns are closed before proceeding
+     */
+    private static void ensureAllDropdownsClosed(WebDriver driver) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript(
+                    "// Close all open dropdowns" +
+                            "document.body.click();" +
+                            "document.activeElement.blur();" +
+                            "" +
+                            "// Remove overlay backdrops" +
+                            "var backdrops = document.querySelectorAll('.cdk-overlay-backdrop');" +
+                            "backdrops.forEach(b => b.click());" +
+                            "" +
+                            "// Hide all panels" +
+                            "var panels = document.querySelectorAll('.mat-select-panel');" +
+                            "panels.forEach(p => p.style.display = 'none');" +
+                            "" +
+                            "// Remove overlay containers" +
+                            "var overlays = document.querySelectorAll('.cdk-overlay-container');" +
+                            "overlays.forEach(o => {" +
+                            "  if (o.innerHTML.includes('mat-select-panel')) {" +
+                            "    o.innerHTML = '';" +
+                            "  }" +
+                            "});"
+            );
+            Thread.sleep(300);
+        } catch (Exception e) {
+            System.out.println("Error ensuring dropdowns closed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Select height dropdown with proper format matching
+     */
+    private static boolean selectHeightDropdown(WebDriver driver, String selectId, String heightValue) {
+        try {
+            // Height options start from mat-option-8 (3' 0") and go up
+            // We need to find the right option based on the height value
+            int startOption = 8;
+            int feet = Integer.parseInt(heightValue.split("'")[0].trim());
+            int inches = Integer.parseInt(heightValue.split("'")[1].replace("\"", "").trim());
+
+            // Calculate option offset (each foot has 12 options)
+            int optionOffset = (feet - 3) * 12 + inches;
+            String optionId = "mat-option-" + (startOption + optionOffset);
+
+            return selectDropdownEnhanced(driver, selectId, optionId);
+        } catch (Exception e) {
+            // Fallback to random height
+            int randomOption = 8 + random.nextInt(60);
+            return selectDropdownEnhanced(driver, selectId, "mat-option-" + randomOption);
+        }
+    }
+
+    /**
+     * Fill SSN input (special handling for SSN mask)
+     */
+    private static boolean fillSSNInput(WebDriver driver, String ssn) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            Boolean result = (Boolean) js.executeScript(
+                    "var inputs = document.querySelectorAll('input[mask=\"000-00-0000\"]');" +
+                            "if (inputs.length > 0) {" +
+                            "  var ssnInput = inputs[inputs.length - 1];" + // Get the newest one
+                            "  ssnInput.value = '" + ssn + "';" +
+                            "  ssnInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  ssnInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  return true;" +
+                            "}" +
+                            "return false;"
+            );
+
+            if (result != null && result) {
+                System.out.println("✅ SSN filled: " + ssn);
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            System.out.println("❌ Error filling SSN: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Fill date input with calendar widget
+     */
+    private static boolean fillDateInput(WebDriver driver, String inputId, String date) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript(
+                    "var input = document.getElementById('" + inputId + "');" +
+                            "if (input) {" +
+                            "  input.value = '" + date + "';" +
+                            "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "}"
+            );
+            return true;
+        } catch (Exception e) {
+            return fillInput(driver, inputId, date);
+        }
+    }
+
+    /**
+     * Fill input by position (for dynamically added fields)
+     */
+    private static boolean fillInputByPosition(WebDriver driver, int position, String value) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            Boolean result = (Boolean) js.executeScript(
+                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled])');" +
+                            "var visibleInputs = Array.from(inputs).filter(i => i.offsetHeight > 0);" +
+                            "var targetInput = visibleInputs[visibleInputs.length - 1 - " + position + "];" +
+                            "if (targetInput) {" +
+                            "  targetInput.value = '" + value + "';" +
+                            "  targetInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  targetInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  return true;" +
+                            "}" +
+                            "return false;"
+            );
+            return result != null && result;
+        } catch (Exception e) {
+            System.out.println("Error filling input by position: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Fill date input by position
+     */
+    private static boolean fillDateInputByPosition(WebDriver driver, int position, String date) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            Boolean result = (Boolean) js.executeScript(
+                    "var inputs = document.querySelectorAll('input[mask=\"00/00/0000\"]');" +
+                            "var targetInput = inputs[inputs.length - 1 - " + position + "];" +
+                            "if (targetInput) {" +
+                            "  targetInput.value = '" + date + "';" +
+                            "  targetInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  targetInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  return true;" +
+                            "}" +
+                            "return false;"
+            );
+            return result != null && result;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Select dropdown if present (for conditional dropdowns)
+     */
+    private static boolean selectDropdownIfPresent(WebDriver driver, String selectId, String optionId) {
+        try {
+            WebElement element = driver.findElement(By.id(selectId));
+            if (element.isDisplayed()) {
+                return selectDropdownEnhanced(driver, selectId, optionId);
+            }
+        } catch (Exception e) {
+            // Element not found or not visible
+        }
+        return true; // Not an error if dropdown doesn't exist
+    }
+
+    /**
+     * Fill textarea
+     */
+    private static boolean fillTextarea(WebDriver driver, String textareaId, String value) {
+        try {
+            WebElement textarea = driver.findElement(By.id(textareaId));
+            textarea.clear();
+            textarea.sendKeys(value);
+            System.out.println("✅ Filled textarea: " + textareaId);
+            return true;
+        } catch (Exception e) {
+            System.out.println("❌ Failed to fill textarea: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check and click submit button if enabled
+     */
+    private static boolean checkAndClickSubmit(WebDriver driver) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            Boolean result = (Boolean) js.executeScript(
+                    "var submitBtn = document.querySelector('button.submit-button');" +
+                            "if (submitBtn && !submitBtn.disabled) {" +
+                            "  submitBtn.click();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;"
+            );
+
+            if (result != null && result) {
+                System.out.println("✅ Clicked SUBMIT button");
+                return true;
+            } else {
+                System.out.println("ℹ️ SUBMIT button is disabled or not found");
+                return false;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Generate a past date string
+     */
+    private static String generatePastDate(int minDaysAgo, int maxDaysAgo) {
+        java.time.LocalDate date = java.time.LocalDate.now()
+                .minusDays(minDaysAgo + random.nextInt(maxDaysAgo - minDaysAgo));
+        return date.format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+    }
+
+    /**
+     * Generate a future date string
+     */
+    private static String generateFutureDate(int minDaysAhead, int maxDaysAhead) {
+        java.time.LocalDate date = java.time.LocalDate.now()
+                .plusDays(minDaysAhead + random.nextInt(maxDaysAhead - minDaysAhead));
+        return date.format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy"));
     }
 
     /**
@@ -499,120 +840,6 @@ public class FormFiller {
             return true;
         } catch (Exception e) {
             System.out.println("❌ Failed to fill " + inputId + ": " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Select option from the newest (most recently added) dropdown
-     */
-    private static boolean selectNewestDropdown(WebDriver driver, String optionNumber) {
-        try {
-            System.out.println("🎯 Selecting from newest dropdown: option " + optionNumber);
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            Boolean result = (Boolean) js.executeScript(
-                    "var selects = document.querySelectorAll('mat-select'); " +
-                            "console.log('Found ' + selects.length + ' dropdowns'); " +
-
-                            "if (selects.length > 0) { " +
-                            "  var newest = selects[selects.length - 1]; " +
-                            "  console.log('Clicking newest dropdown'); " +
-                            "  newest.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
-
-                            "  // Click dropdown " +
-                            "  var trigger = newest.querySelector('.mat-select-trigger'); " +
-                            "  if (trigger) { " +
-                            "    trigger.click(); " +
-                            "  } else { " +
-                            "    newest.click(); " +
-                            "  } " +
-
-                            "  // Wait and select option " +
-                            "  setTimeout(function() { " +
-                            "    var option = document.getElementById('mat-option-" + optionNumber + "'); " +
-                            "    if (option) { " +
-                            "      option.click(); " +
-                            "      // Force close " +
-                            "      setTimeout(function() { " +
-                            "        document.body.click(); " +
-                            "        document.activeElement.blur(); " +
-                            "      }, 300); " +
-                            "    } " +
-                            "  }, 1500); " +
-                            "  return true; " +
-                            "} " +
-                            "return false;"
-            );
-
-            if (result != null && result) {
-                Thread.sleep(2500);
-                System.out.println("✅ Selected option " + optionNumber + " from newest dropdown");
-                return true;
-            }
-
-            System.out.println("❌ Failed to select from newest dropdown");
-            return false;
-
-        } catch (Exception e) {
-            System.out.println("❌ Error selecting newest dropdown: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Select option from the second newest dropdown (for passport country)
-     */
-    private static boolean selectSecondNewestDropdown(WebDriver driver, String optionNumber) {
-        try {
-            System.out.println("🎯 Selecting from second newest dropdown: option " + optionNumber);
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            Boolean result = (Boolean) js.executeScript(
-                    "var selects = document.querySelectorAll('mat-select'); " +
-                            "console.log('Found ' + selects.length + ' dropdowns for second newest'); " +
-
-                            "if (selects.length >= 2) { " +
-                            "  var secondNewest = selects[selects.length - 2]; " +
-                            "  console.log('Clicking second newest dropdown'); " +
-                            "  secondNewest.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
-
-                            "  // Click dropdown " +
-                            "  var trigger = secondNewest.querySelector('.mat-select-trigger'); " +
-                            "  if (trigger) { " +
-                            "    trigger.click(); " +
-                            "  } else { " +
-                            "    secondNewest.click(); " +
-                            "  } " +
-
-                            "  // Wait and select option " +
-                            "  setTimeout(function() { " +
-                            "    var option = document.getElementById('mat-option-" + optionNumber + "'); " +
-                            "    if (option) { " +
-                            "      option.click(); " +
-                            "      // Force close " +
-                            "      setTimeout(function() { " +
-                            "        document.body.click(); " +
-                            "        document.activeElement.blur(); " +
-                            "      }, 300); " +
-                            "    } " +
-                            "  }, 1500); " +
-                            "  return true; " +
-                            "} " +
-                            "return false;"
-            );
-
-            if (result != null && result) {
-                Thread.sleep(2500);
-                System.out.println("✅ Selected option " + optionNumber + " from second newest dropdown");
-                return true;
-            }
-
-            System.out.println("❌ Failed to select from second newest dropdown");
-            return false;
-
-        } catch (Exception e) {
-            System.out.println("❌ Error selecting second newest dropdown: " + e.getMessage());
             return false;
         }
     }

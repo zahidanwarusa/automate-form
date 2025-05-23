@@ -40,17 +40,12 @@ public class FormAutomation {
             // Wait a bit longer to make sure Google fully loads
             Thread.sleep(5000);
 
-            // Initialize Angular helper
-            AngularHelper angularHelper = new AngularHelper(driver);
 
             // Now try to navigate to the actual site (replace with your actual URL)
             String targetUrl = "https://sasq-sat.cbp.dhs.gov/person?query=person"; // Your target URL
             System.out.println("Navigating to: " + targetUrl);
             driver.get(targetUrl);
             System.out.println("Navigation initiated. Waiting for page to load...");
-
-            // Wait for Angular to finish rendering
-            angularHelper.waitForAngular();
 
             // Wait longer for the page to load - increased from 8 to 15 seconds
             Thread.sleep(15000);
