@@ -84,7 +84,7 @@ public class FormFiller {
             System.out.println("First page completed successfully!");
             return true;
         } catch (Exception e) {
-            System.out.println("Error filling first page: " + e.getMessage());
+            System.err.println("Error filling first page: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -106,19 +106,19 @@ public class FormFiller {
             System.out.println("\n=== FILLING MAIN DROPDOWNS ===");
 
             System.out.println("1. Record Status dropdown (OB - OUTBOUND SUBJECT)");
-            selectDropdownEnhanced(driver, "mat-select-4", "mat-option-68");
+            selectDropdown(driver, "mat-select-4", "mat-option-68");
 
             System.out.println("2. Category dropdown (AB - AG/BIO COUNTERMEASURES)");
-            selectDropdownEnhanced(driver, "mat-select-10", "mat-option-549");
+            selectDropdown(driver, "mat-select-10", "mat-option-549");
 
             System.out.println("3. Query Notification dropdown (0 - NO NOTIFICATION)");
-            selectDropdownEnhanced(driver, "mat-select-6", "mat-option-238");
+            selectDropdown(driver, "mat-select-6", "mat-option-238");
 
             System.out.println("4. Exclusions dropdown (Multiple - ANCX)");
-            selectDropdownEnhanced(driver, "mat-select-12", "mat-option-253");
+            selectDropdown(driver, "mat-select-12", "mat-option-253");
 
             System.out.println("5. Primary Action dropdown (4 - REFER TO PASSPORT CONTROL)");
-            selectDropdownEnhanced(driver, "mat-select-8", "mat-option-245");
+            selectDropdown(driver, "mat-select-8", "mat-option-245");
 
             // Since we selected option 245 (not 242), we need to fill primary dates
             System.out.println("5a. Filling Primary Start Date");
@@ -144,7 +144,7 @@ public class FormFiller {
             System.out.println("\n=== FILLING PHYSICAL DESCRIPTIONS ===");
 
             System.out.println("8. Hispanic dropdown");
-            selectDropdownEnhanced(driver, "mat-select-0", "mat-option-2"); // Y - Yes
+            selectDropdown(driver, "mat-select-0", "mat-option-2"); // Y - Yes
 
             System.out.println("9. Height dropdown");
             String heightOption = data.getHeight(); // e.g., "5' 10\""
@@ -157,20 +157,19 @@ public class FormFiller {
             System.out.println("\n=== ADDING DYNAMIC SECTIONS ===");
 
             System.out.println("11. Adding Sex");
-            addFieldWithEnhancedDropdown(driver, "Add Sex", "mat-select-24",
-                    random.nextBoolean() ? "mat-option-630" : "mat-option-631"); // F or M
+            addFieldWithDropdown(driver, "Add Sex", random.nextBoolean() ? "630" : "631"); // F or M
 
             System.out.println("12. Adding Race");
-            String raceOption = "mat-option-" + (594 + random.nextInt(6)); // Random race option
-            addFieldWithEnhancedDropdown(driver, "Add Race", "mat-select-18", raceOption);
+            String raceOption = String.valueOf(594 + random.nextInt(6)); // Random race option
+            addFieldWithDropdown(driver, "Add Race", raceOption);
 
             System.out.println("13. Adding Eye Color");
-            String eyeOption = "mat-option-" + (600 + random.nextInt(12)); // Random eye color option
-            addFieldWithEnhancedDropdown(driver, "Add Eye Color", "mat-select-20", eyeOption);
+            String eyeOption = String.valueOf(600 + random.nextInt(12)); // Random eye color option
+            addFieldWithDropdown(driver, "Add Eye Color", eyeOption);
 
             System.out.println("14. Adding Hair Color");
-            String hairOption = "mat-option-" + (612 + random.nextInt(15)); // Random hair color option
-            addFieldWithEnhancedDropdown(driver, "Add Hair Color", "mat-select-22", hairOption);
+            String hairOption = String.valueOf(612 + random.nextInt(15)); // Random hair color option
+            addFieldWithDropdown(driver, "Add Hair Color", hairOption);
 
             // === NAME SECTION ===
             System.out.println("\n15. Adding Name");
@@ -190,7 +189,7 @@ public class FormFiller {
 
             // === CITIZENSHIP ===
             System.out.println("\n17. Adding Citizenship");
-            addFieldWithEnhancedDropdown(driver, "Add Citizenship", "mat-select-34", "mat-option-1260"); // USA
+            addFieldWithDropdown(driver, "Add Citizenship", "1260"); // USA
 
             // === PASSPORT ===
             System.out.println("\n18. Adding Passport");
@@ -199,30 +198,30 @@ public class FormFiller {
 
                 // Passport Type
                 System.out.println("  - Selecting passport type");
-                selectDropdownByPosition(driver, 0, "mat-option-1518"); // P - Regular
+                selectNewestDropdown(driver, "1518"); // P - Regular
 
                 // Passport Number
                 System.out.println("  - Filling passport number");
-                fillInputByPosition(driver, 0, data.getPassportNumber());
+                fillInput(driver, "mat-input-19", data.getPassportNumber()); // Assuming mat-input-19 is the passport number field
 
                 // Passport Country
                 System.out.println("  - Selecting passport country");
-                selectDropdownByPosition(driver, 1, "mat-option-1520"); // USA
+                selectSecondNewestDropdown(driver, "1520"); // USA
 
                 // Passport Issue Date
                 System.out.println("  - Filling passport issue date");
-                fillDateInputByPosition(driver, 0, data.getPassportIssueDate());
+                fillInput(driver, "mat-input-20", data.getPassportIssueDate()); // Assuming mat-input-20 is the issue date field
 
                 // Passport Expiry Date
                 System.out.println("  - Filling passport expiry date");
-                fillDateInputByPosition(driver, 1, data.getPassportExpiryDate());
+                fillInput(driver, "mat-input-21", data.getPassportExpiryDate()); // Assuming mat-input-21 is the expiry date field
             }
 
             // === A NUMBER ===
             System.out.println("\n19. Adding A#");
             if (clickButtonRobust(driver, "Add A#")) {
                 Thread.sleep(2000); // Wait for input field to appear
-                fillInput(driver, "mat-input-22", data.getaNumber());
+                fillInput(driver, "mat-input-22", data.getaNumber()); // Assuming mat-input-22 is for A#
             }
 
             // === DRIVER'S LICENSE ===
@@ -232,12 +231,12 @@ public class FormFiller {
 
                 // License Number
                 System.out.println("  - Filling license number");
-                fillInput(driver, "mat-input-23", data.getDriverLicense());
+                fillInput(driver, "mat-input-23", data.getDriverLicense()); // Assuming mat-input-23 is for Driver's License
 
                 // License State
                 System.out.println("  - Selecting state");
-                String stateOption = "mat-option-" + (1774 + random.nextInt(62)); // Random US state
-                selectDropdownByPosition(driver, 0, stateOption);
+                String stateOption = String.valueOf(1774 + random.nextInt(62)); // Random US state
+                selectNewestDropdown(driver, stateOption);
             }
 
             // === SSN ===
@@ -256,7 +255,7 @@ public class FormFiller {
                 Thread.sleep(3000);
 
                 // Misc Type dropdown
-                selectDropdownByPosition(driver, 0, "mat-option-" + (1885 + random.nextInt(5)));
+                selectNewestDropdown(driver, String.valueOf(1885 + random.nextInt(5)));
 
                 // Misc Number
                 String miscNumber = "MISC" + (100000 + random.nextInt(900000));
@@ -269,10 +268,10 @@ public class FormFiller {
                 Thread.sleep(3000);
 
                 // Phone Type
-                selectDropdownByPosition(driver, 0, "mat-option-" + (1890 + random.nextInt(4)));
+                selectNewestDropdown(driver, String.valueOf(1890 + random.nextInt(4)));
 
                 // Phone Country
-                selectDropdownByPosition(driver, 1, "mat-option-1895"); // USA
+                selectSecondNewestDropdown(driver, "1895"); // USA
 
                 // Phone Number
                 String phoneNumber = "202" + (1000000 + random.nextInt(9000000));
@@ -285,7 +284,7 @@ public class FormFiller {
                 Thread.sleep(3000);
 
                 // Communication Type
-                selectDropdownByPosition(driver, 0, "mat-option-" + (1900 + random.nextInt(3)));
+                selectNewestDropdown(driver, String.valueOf(1900 + random.nextInt(3)));
 
                 // Communication Value
                 String email = "test" + System.currentTimeMillis() + "@example.com";
@@ -298,7 +297,7 @@ public class FormFiller {
                 Thread.sleep(3000);
 
                 // Address Type
-                selectDropdownByPosition(driver, 0, "mat-option-" + (1910 + random.nextInt(4)));
+                selectNewestDropdown(driver, String.valueOf(1910 + random.nextInt(4)));
 
                 // Street
                 fillInputByPosition(driver, 0, "123 Test Street");
@@ -307,10 +306,13 @@ public class FormFiller {
                 fillInputByPosition(driver, 1, "Washington");
 
                 // State (if US address)
-                selectDropdownByPosition(driver, 1, "mat-option-1915"); // DC
+                selectSecondNewestDropdown(driver, "1915"); // DC
 
                 // Country
-                selectDropdownByPosition(driver, 2, "mat-option-1260"); // USA
+                selectDropdownByPosition(driver, 2, "1260"); // USA
+                // Note: selectDropdownByPosition is still used here, as it's a general utility.
+                // The 'old' file didn't have a specific 'selectThirdNewestDropdown', so we'll
+                // keep the most robust, general solution for cases like this.
 
                 // Postal Code
                 fillInputByPosition(driver, 2, "20001");
@@ -345,7 +347,7 @@ public class FormFiller {
 
             // Final cleanup
             System.out.println("\n27. Final cleanup - ensuring all dropdowns are closed");
-            ensureAllDropdownsClosed(driver);
+            forceCloseDropdown(driver);
             Thread.sleep(2000);
 
             // Try to submit the form (if submit button is enabled)
@@ -356,153 +358,337 @@ public class FormFiller {
             return true;
 
         } catch (Exception e) {
-            System.out.println("❌ Error filling second page: " + e.getMessage());
+            System.err.println("❌ Error filling second page: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
     /**
-     * Enhanced dropdown selection with guaranteed closure and improved waiting.
-     * This method attempts to open a mat-select dropdown by its ID, click a specific mat-option,
-     * and then aggressively close any open overlays or panels to prevent interception issues.
-     *
-     * @param driver The WebDriver instance.
-     * @param selectId The ID of the mat-select element (e.g., "mat-select-4").
-     * @param optionId The ID of the mat-option element to select (e.g., "mat-option-68").
-     * @return true if the option was successfully selected and dropdown closed, false otherwise.
+     * ROBUST dropdown selection - handles interception with FORCED closure
+     * This method is adapted from FormFiller old.java.
      */
-    private static boolean selectDropdownEnhanced(WebDriver driver, String selectId, String optionId) {
+    private static boolean selectDropdown(WebDriver driver, String selectId, String optionId) {
         try {
-            System.out.println("🎯 Enhanced selection: " + selectId + " → " + optionId);
+            System.out.println("🎯 Selecting " + selectId + " → " + optionId);
+
+            // Method 1: Try standard approach with aggressive closing
+            try {
+                WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
+                WebElement matSelect = wait.until(ExpectedConditions.elementToBeClickable(By.id(selectId)));
+                matSelect.click();
+                Thread.sleep(1500); // Give time for options to appear
+
+                WebElement option = wait.until(ExpectedConditions.elementToBeClickable(By.id(optionId)));
+                option.click();
+                Thread.sleep(500);
+
+                // AGGRESSIVE dropdown closing - try multiple methods
+                forceCloseDropdown(driver);
+
+                System.out.println("✅ Selected " + selectId + " → " + optionId);
+                return true;
+            } catch (Exception e) {
+                System.err.println("Standard approach failed: " + e.getMessage());
+            }
+
+            // Method 2: JavaScript approach for interception with forced close
+            try {
+                JavascriptExecutor js = (JavascriptExecutor) driver;
+                Boolean result = (Boolean) js.executeScript(
+                        "var select = document.getElementById('" + selectId + "'); " +
+                                "if (select) { " +
+                                "  // Try clicking trigger first " +
+                                "  var trigger = select.querySelector('.mat-select-trigger'); " +
+                                "  if (trigger) { " +
+                                "    trigger.click(); " +
+                                "  } else { " +
+                                "    select.click(); " +
+                                "  } " +
+                                "  setTimeout(function() { " +
+                                "    var option = document.getElementById('" + optionId + "'); " +
+                                "    if (option) { " +
+                                "      option.click(); " +
+                                "      // Force close dropdown multiple ways " +
+                                "      setTimeout(function() { " +
+                                "        document.body.click(); " +
+                                "        document.activeElement.blur(); " +
+                                "        // Click somewhere safe " +
+                                "        var safe = document.querySelector('h1, h2, .page-title'); " +
+                                "        if (safe) safe.click(); " +
+                                "      }, 500); " +
+                                "    } " +
+                                "  }, 1000); " +
+                                "  return true; " +
+                                "} " +
+                                "return false;"
+                );
+
+                if (result != null && result) {
+                    Thread.sleep(3000); // Wait for all actions to complete
+                    System.out.println("✅ Selected " + selectId + " → " + optionId + " (JS)");
+                    return true;
+                }
+            } catch (Exception e) {
+                System.err.println("JavaScript approach failed: " + e.getMessage());
+            }
+
+            System.out.println("❌ Failed to select " + selectId);
+            return false;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error selecting dropdown: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * FORCE close any open dropdowns - multiple aggressive methods
+     * This method is copied directly from FormFiller old.java.
+     */
+    private static void forceCloseDropdown(WebDriver driver) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Method 1: Click body
+            js.executeScript("document.body.click();");
+            Thread.sleep(300);
+
+            // Method 2: Blur active element
+            js.executeScript("if (document.activeElement) document.activeElement.blur();");
+            Thread.sleep(300);
+
+            // Method 3: Press ESC key
+            js.executeScript("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));");
+            Thread.sleep(300);
+
+            // Method 4: Click on a safe element (page title)
+            js.executeScript(
+                    "var safe = document.querySelector('h1, h2, .page-title, .mat-toolbar'); " +
+                            "if (safe) safe.click();"
+            );
+            Thread.sleep(300);
+
+            // Method 5: Remove any open overlay panels
+            js.executeScript(
+                    "var panels = document.querySelectorAll('.mat-select-panel, .cdk-overlay-pane'); " +
+                            "for (var i = 0; i < panels.length; i++) { " +
+                            "  if (panels[i].style.display !== 'none') { " +
+                            "    panels[i].style.display = 'none'; " +
+                            "  } " +
+                            "}"
+            );
+
+            System.out.println("🔒 Force closed dropdown");
+
+        } catch (Exception e) {
+            System.err.println("Error force closing dropdown: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Add field with dropdown - ENHANCED with better option clicking
+     * This method is adapted from FormFiller old.java.
+     */
+    private static boolean addFieldWithDropdown(WebDriver driver, String buttonText, String optionNumber) {
+        try {
+            System.out.println("🎯 Adding " + buttonText + " with option " + optionNumber);
+
+            if (clickButtonRobust(driver, buttonText)) {
+                Thread.sleep(3000); // Wait for new dropdown
+
+                // Enhanced JavaScript approach for new dropdowns
+                JavascriptExecutor js = (JavascriptExecutor) driver;
+
+                // First, get count of dropdowns to find the newest one
+                // Use WebDriverWait to ensure dropdowns are present before querying
+                WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
+                wait.until(d -> ((List<WebElement>) js.executeScript("return Array.from(document.querySelectorAll('mat-select'));")).size() > 0);
+
+                Long selectCount = (Long) js.executeScript("return document.querySelectorAll('mat-select').length;");
+                System.out.println("Found " + selectCount + " dropdowns after adding " + buttonText);
+
+                Boolean result = (Boolean) js.executeScript(
+                        "var selects = document.querySelectorAll('mat-select'); " +
+                                "console.log('Total selects found: ' + selects.length); " +
+
+                                "if (selects.length > 0) { " +
+                                "  var newest = selects[selects.length - 1]; " +
+                                "  console.log('Clicking newest dropdown'); " +
+                                "  newest.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
+
+                                "  // Try clicking trigger first " +
+                                "  var trigger = newest.querySelector('.mat-select-trigger'); " +
+                                "  if (trigger) { " +
+                                "    trigger.click(); " +
+                                "  } else { " +
+                                "    newest.click(); " +
+                                "  } " +
+
+                                "  // Wait then select option " +
+                                "  setTimeout(function() { " +
+                                "    console.log('Looking for option: mat-option-" + optionNumber + "'); " +
+                                "    var option = document.getElementById('mat-option-" + optionNumber + "'); " +
+                                "    if (option) { " +
+                                "      option.click(); " +
+                                "      // Force close after selection " +
+                                "      setTimeout(function() { " +
+                                "        document.body.click(); " +
+                                "        document.activeElement.blur(); " +
+                                "      }, 500); " + // Increased delay for closure
+                                "    } else { " +
+                                "      console.log('Option not found!'); " +
+                                "    } " +
+                                "  }, 2000); " + // Increased delay for option to appear
+                                "  return true; " +
+                                "} " +
+                                "return false;"
+                );
+
+                if (result != null && result) {
+                    Thread.sleep(4000); // Wait for all actions to complete
+
+                    // Force close any remaining dropdowns
+                    forceCloseDropdown(driver);
+
+                    System.out.println("✅ Added " + buttonText + " with option " + optionNumber);
+                    return true;
+                } else {
+                    System.err.println("❌ JavaScript execution failed for " + buttonText);
+                }
+            }
+
+            System.out.println("❌ Failed to add " + buttonText);
+            return false;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error adding " + buttonText + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Select option from the newest (most recently added) dropdown
+     * This method is copied directly from FormFiller old.java.
+     */
+    private static boolean selectNewestDropdown(WebDriver driver, String optionNumber) {
+        try {
+            System.out.println("🎯 Selecting from newest dropdown: option " + optionNumber);
 
             JavascriptExecutor js = (JavascriptExecutor) driver;
             WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
 
-            // First ensure any open dropdowns are closed to prevent interference
-            ensureAllDropdownsClosed(driver);
-            Thread.sleep(500); // Give a moment for closure to take effect
+            // Wait until at least one mat-select is present
+            wait.until(d -> ((List<WebElement>) js.executeScript("return Array.from(document.querySelectorAll('mat-select'));")).size() > 0);
 
-            // Wait for the mat-select element to be clickable
-            WebElement matSelectElement = wait.until(ExpectedConditions.elementToBeClickable(By.id(selectId)));
-
-            // Execute the dropdown selection with guaranteed closure using JavaScript Promise
             Boolean result = (Boolean) js.executeScript(
-                    "return new Promise((resolve) => {" +
-                            "  console.log('Starting dropdown selection: " + selectId + "');" +
-                            "  var select = arguments[0];" + // Pass WebElement directly
-                            "  " +
-                            "  // Find the mat-select-trigger within the mat-select and click it" +
-                            "  var trigger = select.querySelector('.mat-select-trigger');" +
-                            "  if (!trigger) {" +
-                            "    console.error('Mat-select-trigger not found for: " + selectId + "');" +
-                            "    resolve(false);" +
-                            "    return;" +
-                            "  }" +
-                            "  " +
-                            "  // Scroll into view and click the trigger to open the dropdown panel" +
-                            "  trigger.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "  setTimeout(() => {" +
-                            "    trigger.click();" + // Click the trigger
-                            "    console.log('Clicked mat-select-trigger, waiting for panel to appear...');" +
-                            "    " +
-                            "    // Wait for the dropdown panel to appear and then attempt to click the option" +
-                            "    // Use a robust wait for the option to be present and clickable" +
-                            "    var checkOptionInterval = setInterval(() => {" +
-                            "      var option = document.getElementById('" + optionId + "');" +
-                            "      if (option) {" +
-                            "        clearInterval(checkOptionInterval);" +
-                            "        console.log('Found option, attempting to click: " + optionId + "');" +
-                            "        option.click();" +
-                            "        " +
-                            "        // CRITICAL: Force close the dropdown after selection using multiple methods" +
-                            "        setTimeout(() => {" +
-                            "          document.body.click();" +
-                            "          var escEvent = new KeyboardEvent('keydown', {" +
-                            "            key: 'Escape'," +
-                            "            keyCode: 27," +
-                            "            bubbles: true" +
-                            "          });" +
-                            "          document.dispatchEvent(escEvent);" +
-                            "          var backdrop = document.querySelector('.cdk-overlay-backdrop');" +
-                            "          if (backdrop) backdrop.click();" +
-                            "          var panels = document.querySelectorAll('.mat-select-panel');" +
-                            "          panels.forEach(p => p.style.display = 'none');" +
-                            "          console.log('Dropdown closure attempts executed.');" +
-                            "          resolve(true);" +
-                            "        }, 500);" +
-                            "      } else {" +
-                            "        console.log('Option ' + '" + optionId + "' + ' not yet found. Retrying...');" +
-                            "      }" +
-                            "    }, 200); // Check every 200ms" +
-                            "    " +
-                            "    // Timeout for option finding to prevent infinite loop" +
-                            "    setTimeout(() => {" +
-                            "      if (checkOptionInterval) {" +
-                            "        clearInterval(checkOptionInterval);" +
-                            "        console.error('Timeout: Option ' + '" + optionId + "' + ' not found within allowed time.');" +
-                            "        document.body.click(); // Still try to close any open dropdowns" +
-                            "        resolve(false);" +
-                            "      }" +
-                            "    }, 5000); // 5 seconds timeout for option to appear" +
-                            "  }, 500);" + // Wait for select element click to register
-                            "});", matSelectElement // Pass the WebElement as an argument
+                    "var selects = document.querySelectorAll('mat-select'); " +
+                            "console.log('Found ' + selects.length + ' dropdowns'); " +
+
+                            "if (selects.length > 0) { " +
+                            "  var newest = selects[selects.length - 1]; " +
+                            "  console.log('Clicking newest dropdown'); " +
+                            "  newest.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
+
+                            "  // Click dropdown " +
+                            "  var trigger = newest.querySelector('.mat-select-trigger'); " +
+                            "  if (trigger) { " +
+                            "    trigger.click(); " +
+                            "  } else { " +
+                            "    newest.click(); " +
+                            "  } " +
+
+                            "  // Wait and select option " +
+                            "  setTimeout(function() { " +
+                            "    var option = document.getElementById('mat-option-" + optionNumber + "'); " +
+                            "    if (option) { " +
+                            "      option.click(); " +
+                            "      // Force close " +
+                            "      setTimeout(function() { " +
+                            "        document.body.click(); " +
+                            "        document.activeElement.blur(); " +
+                            "      }, 300); " +
+                            "    } " +
+                            "  }, 1500); " +
+                            "  return true; " +
+                            "} " +
+                            "return false;"
             );
 
-            // Wait extra time in Java to ensure all JavaScript actions complete and dropdown is truly closed
-            Thread.sleep(2500);
-
             if (result != null && result) {
-                System.out.println("✅ Successfully selected and closed: " + selectId);
+                Thread.sleep(2500);
+                System.out.println("✅ Selected option " + optionNumber + " from newest dropdown");
                 return true;
-            } else {
-                System.out.println("❌ Failed to select: " + selectId);
-                return false;
             }
 
+            System.out.println("❌ Failed to select from newest dropdown");
+            return false;
+
         } catch (Exception e) {
-            System.out.println("❌ Error in enhanced selection: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("❌ Error selecting newest dropdown: " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * Add field with enhanced dropdown handling - specifically for dynamically added fields.
-     * This method clicks an "Add" button, waits for a new dropdown to appear, and then
-     * attempts to select an option from it using the enhanced dropdown selection logic.
-     *
-     * @param driver The WebDriver instance.
-     * @param buttonText The text of the "Add" button to click (e.g., "Add Sex").
-     * @param expectedSelectId The ID of the expected mat-select element that appears (can be null/empty if unknown).
-     * @param optionId The ID of the mat-option to select (e.g., "mat-option-630").
-     * @return true if the field was added and option selected, false otherwise.
+     * Select option from the second newest dropdown (for passport country)
+     * This method is copied directly from FormFiller old.java.
      */
-    private static boolean addFieldWithEnhancedDropdown(WebDriver driver, String buttonText,
-                                                        String expectedSelectId, String optionId) {
+    private static boolean selectSecondNewestDropdown(WebDriver driver, String optionNumber) {
         try {
-            System.out.println("🎯 Adding " + buttonText + " with enhanced dropdown");
+            System.out.println("🎯 Selecting from second newest dropdown: option " + optionNumber);
 
-            // Click the add button using the robust click method
-            if (!clickButtonRobust(driver, buttonText)) {
-                System.out.println("❌ Failed to click add button for: " + buttonText);
-                return false;
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
+
+            // Wait until at least two mat-select elements are present
+            wait.until(d -> ((List<WebElement>) js.executeScript("return Array.from(document.querySelectorAll('mat-select'));")).size() >= 2);
+
+            Boolean result = (Boolean) js.executeScript(
+                    "var selects = document.querySelectorAll('mat-select'); " +
+                            "console.log('Found ' + selects.length + ' dropdowns for second newest'); " +
+
+                            "if (selects.length >= 2) { " +
+                            "  var secondNewest = selects[selects.length - 2]; " +
+                            "  console.log('Clicking second newest dropdown'); " +
+                            "  secondNewest.scrollIntoView({behavior: 'smooth', block: 'center'}); " +
+
+                            "  // Click dropdown " +
+                            "  var trigger = secondNewest.querySelector('.mat-select-trigger'); " +
+                            "  if (trigger) { " +
+                            "    trigger.click(); " +
+                            "  } else { " +
+                            "    secondNewest.click(); " +
+                            "  } " +
+
+                            "  // Wait and select option " +
+                            "  setTimeout(function() { " +
+                            "    var option = document.getElementById('mat-option-" + optionNumber + "'); " +
+                            "    if (option) { " +
+                            "      option.click(); " +
+                            "      // Force close " +
+                            "      setTimeout(function() { " +
+                            "        document.body.click(); " +
+                            "        document.activeElement.blur(); " +
+                            "      }, 300); " +
+                            "    } " +
+                            "  }, 1500); " +
+                            "  return true; " +
+                            "} " +
+                            "return false;"
+            );
+
+            if (result != null && result) {
+                Thread.sleep(2500);
+                System.out.println("✅ Selected option " + optionNumber + " from second newest dropdown");
+                return true;
             }
 
-            Thread.sleep(3000); // Wait for the new field/dropdown to appear after clicking "Add"
-
-            // Use the expected select ID if provided, otherwise find the newest dropdown by position
-            if (expectedSelectId != null && !expectedSelectId.isEmpty()) {
-                return selectDropdownEnhanced(driver, expectedSelectId, optionId);
-            } else {
-                // Fallback to position-based selection if a specific ID isn't known for dynamic dropdowns
-                System.out.println("ℹ️ Expected select ID not provided, attempting to select from newest dropdown.");
-                return selectDropdownByPosition(driver, 0, optionId); // Position 0 means the newest dropdown
-            }
+            System.out.println("❌ Failed to select from second newest dropdown");
+            return false;
 
         } catch (Exception e) {
-            System.out.println("❌ Error adding field with dropdown: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("❌ Error selecting second newest dropdown: " + e.getMessage());
             return false;
         }
     }
@@ -511,6 +697,8 @@ public class FormFiller {
      * Select dropdown by position (for dynamically added fields).
      * This method is useful when the ID of a dynamically added dropdown is not static,
      * and you need to target it based on its order of appearance (e.g., the newest one).
+     * This method is kept as a general utility, especially for cases where more than
+     * the newest or second newest dropdown needs to be targeted.
      *
      * @param driver The WebDriver instance.
      * @param position The position of the dropdown from the end of the list of all mat-selects (0 for newest, 1 for second newest, etc.).
@@ -525,7 +713,7 @@ public class FormFiller {
             WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
 
             // Ensure dropdowns are closed first to avoid interference
-            ensureAllDropdownsClosed(driver);
+            forceCloseDropdown(driver);
             Thread.sleep(500);
 
             // Find the target mat-select element by position using JavaScript
@@ -572,10 +760,14 @@ public class FormFiller {
                             "        console.log('Found option, attempting to click: " + optionId + "');" +
                             "        option.click();" +
                             "        " +
-                            "        // Force close the dropdown after selection using multiple methods" +
+                            "        // CRITICAL: Force close the dropdown after selection using multiple methods" +
                             "        setTimeout(() => {" +
                             "          document.body.click();" +
-                            "          var escEvent = new KeyboardEvent('keydown', {key: 'Escape', keyCode: 27, bubbles: true});" +
+                            "          var escEvent = new KeyboardEvent('keydown', {" +
+                            "            key: 'Escape'," +
+                            "            keyCode: 27," +
+                            "            bubbles: true" +
+                            "          });" +
                             "          document.dispatchEvent(escEvent);" +
                             "          var backdrop = document.querySelector('.cdk-overlay-backdrop');" +
                             "          if (backdrop) backdrop.click();" +
@@ -607,298 +799,7 @@ public class FormFiller {
             return result != null && result;
 
         } catch (Exception e) {
-            System.out.println("❌ Error selecting by position " + position + ": " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * Ensures all open Angular Material dropdowns and overlays are aggressively closed.
-     * This is crucial to prevent invisible overlays from blocking subsequent interactions.
-     * It attempts multiple methods: clicking the body, blurring active elements,
-     * dispatching Escape key, clicking backdrops, and directly hiding panels/removing overlay containers.
-     *
-     * @param driver The WebDriver instance.
-     */
-    private static void ensureAllDropdownsClosed(WebDriver driver) {
-        try {
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            System.out.println("Attempting to ensure all dropdowns and overlays are closed...");
-            js.executeScript(
-                    "// Method 1: Simulate a click on the document body" +
-                            "document.body.click();" +
-                            "// Method 2: Blur the currently active element (if any)" +
-                            "if (document.activeElement && document.activeElement !== document.body) {" +
-                            "  document.activeElement.blur();" +
-                            "}" +
-                            "// Method 3: Dispatch an Escape keydown event" +
-                            "var escEvent = new KeyboardEvent('keydown', {" +
-                            "  key: 'Escape'," +
-                            "  keyCode: 27," +
-                            "  bubbles: true" +
-                            "});" +
-                            "document.dispatchEvent(escEvent);" +
-                            "" +
-                            "// Method 4: Click on and remove any cdk-overlay-backdrop elements (the invisible overlay)" +
-                            "var backdrops = document.querySelectorAll('.cdk-overlay-backdrop');" +
-                            "backdrops.forEach(b => {" +
-                            "  if (b.style.display !== 'none') {" + // Only click if visible
-                            "    b.click();" +
-                            "    b.remove(); // Remove it from DOM after clicking" +
-                            "  }" +
-                            "});" +
-                            "" +
-                            "// Method 5: Directly hide all mat-select-panel elements" +
-                            "var panels = document.querySelectorAll('.mat-select-panel');" +
-                            "panels.forEach(p => {" +
-                            "  if (p.style.display !== 'none') {" +
-                            "    p.style.display = 'none';" +
-                            "  }" +
-                            "});" +
-                            "" +
-                            "// Method 6: Clean up cdk-overlay-container if they contain dropdown panels" +
-                            "var overlays = document.querySelectorAll('.cdk-overlay-container');" +
-                            "overlays.forEach(o => {" +
-                            "  // Check if the overlay container specifically holds a mat-select-panel" +
-                            "  if (o.innerHTML.includes('mat-select-panel')) {" +
-                            "    o.innerHTML = ''; // Clear its content" +
-                            "  }" +
-                            "});" +
-                            "console.log('Aggressive dropdown closure script executed.');"
-            );
-            Thread.sleep(500); // Give some time for the browser to process the JS
-        } catch (Exception e) {
-            System.out.println("Error ensuring dropdowns closed: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Select height dropdown with proper format matching.
-     * This method parses the height string (e.g., "5' 10\"") and calculates
-     * the corresponding mat-option ID based on a known pattern.
-     *
-     * @param driver The WebDriver instance.
-     * @param selectId The ID of the height mat-select element.
-     * @param heightValue The height string (e.g., "5' 10\"").
-     * @return true if the height was selected, false otherwise.
-     */
-    private static boolean selectHeightDropdown(WebDriver driver, String selectId, String heightValue) {
-        try {
-            // Height options start from mat-option-8 (3' 0") and go up
-            // We need to find the right option based on the height value
-            int startOptionId = 8; // Corresponds to 3' 0"
-            int feet = Integer.parseInt(heightValue.split("'")[0].trim());
-            int inches = Integer.parseInt(heightValue.split("'")[1].replace("\"", "").trim());
-
-            // Calculate option offset: (feet - starting_feet) * 12 inches + current_inches
-            int optionOffset = (feet - 3) * 12 + inches;
-            String optionId = "mat-option-" + (startOptionId + optionOffset);
-
-            System.out.println("Calculated height option ID: " + optionId + " for height: " + heightValue);
-            return selectDropdownEnhanced(driver, selectId, optionId);
-        } catch (Exception e) {
-            System.out.println("❌ Error calculating or selecting height. Falling back to random height. " + e.getMessage());
-            // Fallback to a random height if parsing fails or option is not found
-            int randomOption = 8 + random.nextInt(60); // Assuming 60 options cover a reasonable range
-            return selectDropdownEnhanced(driver, selectId, "mat-option-" + randomOption);
-        }
-    }
-
-    /**
-     * Fill SSN input field, handling potential input masks or special behaviors.
-     * This uses JavaScript to directly set the value and dispatch input/change events.
-     * This method also adds a WebDriverWait for the input field to be visible.
-     *
-     * @param driver The WebDriver instance.
-     * @param ssn The SSN string to enter.
-     * @return true if SSN was filled, false otherwise.
-     */
-    private static boolean fillSSNInput(WebDriver driver, String ssn) {
-        try {
-            System.out.println("Filling SSN input with: " + ssn);
-            WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
-            WebElement ssnInput = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[mask=\"000-00-0000\"]"))); // Use CSS selector for mask
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            Boolean result = (Boolean) js.executeScript(
-                    "var input = arguments[0];" +
-                            "if (input) {" +
-                            "  input.value = '" + ssn + "';" +
-                            "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  return true;" +
-                            "}" +
-                            "return false;", ssnInput
-            );
-
-            if (result != null && result) {
-                System.out.println("✅ SSN filled: " + ssn);
-                return true;
-            } else {
-                System.out.println("❌ SSN input element not found or script failed.");
-                return false;
-            }
-        } catch (Exception e) {
-            System.out.println("❌ Error filling SSN: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * Fill date input field, specifically designed for date picker inputs.
-     * It uses JavaScript to directly set the value and trigger events, which is often
-     * more reliable for date inputs that might have complex UI components.
-     * This method also adds a WebDriverWait for the input field to be visible.
-     *
-     * @param driver The WebDriver instance.
-     * @param inputId The ID of the date input field.
-     * @param date The date string in "MM/dd/yyyy" format.
-     * @return true if the date was filled, false otherwise.
-     */
-    private static boolean fillDateInput(WebDriver driver, String inputId, String date) {
-        try {
-            System.out.println("Filling date input (ID: " + inputId + ") with: " + date);
-            WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
-            WebElement inputElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(inputId)));
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            Boolean result = (Boolean) js.executeScript(
-                    "var input = arguments[0];" + // Use arguments[0] to pass the WebElement directly
-                            "if (input) {" +
-                            "  input.value = '" + date + "';" +
-                            "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  return true;" +
-                            "}" +
-                            "return false;", inputElement // Pass the WebElement as an argument
-            );
-            if (result != null && result) {
-                System.out.println("✅ Filled date input: " + inputId + ": " + date);
-                return true;
-            } else {
-                System.out.println("❌ Failed to fill date input via JS: " + inputId);
-                // Fallback to standard fillInput if JS fails, though it might not work for complex date pickers
-                return fillInput(driver, inputId, date);
-            }
-        } catch (Exception e) {
-            System.out.println("❌ Error filling date input " + inputId + ": " + e.getMessage());
-            e.printStackTrace();
-            // Fallback to standard fillInput
-            return fillInput(driver, inputId, date);
-        }
-    }
-
-    /**
-     * Fill input by position (for dynamically added fields).
-     * This finds the target input based on its position from the end of all visible,
-     * non-readonly/non-disabled input elements.
-     * This method also adds a WebDriverWait for the input field to be visible.
-     *
-     * @param driver The WebDriver instance.
-     * @param position The position from the newest input (0 for newest, 1 for second newest, etc.).
-     * @param value The string value to enter.
-     * @return true if the input was filled, false otherwise.
-     */
-    private static boolean fillInputByPosition(WebDriver driver, int position, String value) {
-        try {
-            System.out.println("Filling input at position " + position + " with: " + value);
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
-
-            WebElement targetInput = wait.until(d -> {
-                List<WebElement> inputs = (List<WebElement>) js.executeScript(
-                        "return Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled])')).filter(i => i.offsetWidth > 0 || i.offsetHeight > 0);"
-                );
-                int targetIndex = inputs.size() - 1 - position;
-                if (targetIndex >= 0 && targetIndex < inputs.size()) {
-                    return inputs.get(targetIndex);
-                }
-                return null;
-            });
-
-            if (targetInput == null) {
-                System.out.println("❌ Failed to find input at position " + position);
-                return false;
-            }
-
-            Boolean result = (Boolean) js.executeScript(
-                    "var input = arguments[0];" + // Use arguments[0] to pass the WebElement directly
-                            "if (input) {" +
-                            "  input.value = '" + value + "';" +
-                            "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  return true;" +
-                            "}" +
-                            "return false;", targetInput // Pass the WebElement as an argument
-            );
-            if (result != null && result) {
-                System.out.println("✅ Filled input at position " + position + ": " + value);
-                return true;
-            } else {
-                System.out.println("❌ Failed to fill input at position " + position);
-                return false;
-            }
-        } catch (Exception e) {
-            System.out.println("❌ Error filling input by position " + position + ": " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * Fill date input by position (for dynamically added date fields).
-     * Similar to fillInputByPosition but specifically targets date inputs with a mask.
-     * This method also adds a WebDriverWait for the input field to be visible.
-     *
-     * @param driver The WebDriver instance.
-     * @param position The position from the newest date input (0 for newest, 1 for second newest, etc.).
-     * @param date The date string in "MM/dd/yyyy" format.
-     * @return true if the date input was filled, false otherwise.
-     */
-    private static boolean fillDateInputByPosition(WebDriver driver, int position, String date) {
-        try {
-            System.out.println("Filling date input at position " + position + " with: " + date);
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
-
-            WebElement targetInput = wait.until(d -> {
-                List<WebElement> inputs = (List<WebElement>) js.executeScript(
-                        "return Array.from(document.querySelectorAll('input[mask=\"00/00/0000\"]')).filter(i => i.offsetWidth > 0 || i.offsetHeight > 0);"
-                );
-                int targetIndex = inputs.size() - 1 - position;
-                if (targetIndex >= 0 && targetIndex < inputs.size()) {
-                    return inputs.get(targetIndex);
-                }
-                return null;
-            });
-
-            if (targetInput == null) {
-                System.out.println("❌ Failed to find date input at position " + position);
-                return false;
-            }
-
-            Boolean result = (Boolean) js.executeScript(
-                    "var input = arguments[0];" + // Use arguments[0] to pass the WebElement directly
-                            "if (input) {" +
-                            "  input.value = '" + date + "';" +
-                            "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  return true;" +
-                            "}" +
-                            "return false;", targetInput // Pass the WebElement as an argument
-            );
-            if (result != null && result) {
-                System.out.println("✅ Filled date input at position " + position + ": " + date);
-                return true;
-            } else {
-                System.out.println("❌ Failed to fill date input at position " + position);
-                return false;
-            }
-        } catch (Exception e) {
-            System.out.println("❌ Error filling date input by position " + position + ": " + e.getMessage());
+            System.err.println("❌ Error selecting by position " + position + ": " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -920,7 +821,7 @@ public class FormFiller {
             WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(selectId)));
             if (element != null && element.isDisplayed()) {
                 System.out.println("ℹ️ Conditional dropdown '" + selectId + "' is present. Attempting selection.");
-                return selectDropdownEnhanced(driver, selectId, optionId);
+                return selectDropdown(driver, selectId, optionId); // Use the 'old' selectDropdown
             }
         } catch (Exception e) {
             System.out.println("ℹ️ Conditional dropdown '" + selectId + "' not found or not visible. Skipping selection.");
@@ -948,7 +849,7 @@ public class FormFiller {
             System.out.println("✅ Filled textarea: " + textareaId);
             return true;
         } catch (Exception e) {
-            System.out.println("❌ Failed to fill textarea '" + textareaId + "': " + e.getMessage());
+            System.err.println("❌ Failed to fill textarea '" + textareaId + "': " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -987,7 +888,7 @@ public class FormFiller {
                 return false;
             }
         } catch (Exception e) {
-            System.out.println("❌ Error checking/clicking submit button: " + e.getMessage());
+            System.err.println("❌ Error checking/clicking submit button: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -1083,7 +984,7 @@ public class FormFiller {
             return true;
 
         } catch (Exception e) {
-            System.out.println("❌ Error clicking button '" + identifier + "': " + e.getMessage());
+            System.err.println("❌ Error clicking button '" + identifier + "': " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -1112,7 +1013,7 @@ public class FormFiller {
             System.out.println("✅ Clicked simple button: " + buttonText);
             return true;
         } catch (Exception e) {
-            System.out.println("❌ Failed to click simple button '" + buttonText + "': " + e.getMessage());
+            System.err.println("❌ Failed to click simple button '" + buttonText + "': " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -1138,7 +1039,7 @@ public class FormFiller {
             System.out.println("✅ Filled " + inputId + ": " + value);
             return true;
         } catch (Exception e) {
-            System.out.println("❌ Failed to fill " + inputId + ": " + e.getMessage());
+            System.err.println("❌ Failed to fill " + inputId + ": " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -1164,7 +1065,238 @@ public class FormFiller {
             System.out.println("✅ Sent keys to element " + by + ": " + text);
             return true;
         } catch (Exception e) {
-            System.out.println("❌ Error sending keys to element " + by + ": " + e.getMessage());
+            System.err.println("❌ Error sending keys to element " + by + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Select height dropdown with proper format matching.
+     * This method parses the height string (e.g., "5' 10\"") and calculates
+     * the corresponding mat-option ID based on a known pattern.
+     *
+     * @param driver The WebDriver instance.
+     * @param selectId The ID of the height mat-select element.
+     * @param heightValue The height string (e.g., "5' 10\"").
+     * @return true if the height was selected, false otherwise.
+     */
+    private static boolean selectHeightDropdown(WebDriver driver, String selectId, String heightValue) {
+        try {
+            // Height options start from mat-option-8 (3' 0") and go up
+            // We need to find the right option based on the height value
+            int startOptionId = 8; // Corresponds to 3' 0"
+            int feet = Integer.parseInt(heightValue.split("'")[0].trim());
+            int inches = Integer.parseInt(heightValue.split("'")[1].replace("\"", "").trim());
+
+            // Calculate option offset: (feet - starting_feet) * 12 inches + current_inches
+            int optionOffset = (feet - 3) * 12 + inches;
+            String optionId = "mat-option-" + (startOptionId + optionOffset);
+
+            System.out.println("Calculated height option ID: " + optionId + " for height: " + heightValue);
+            return selectDropdown(driver, selectId, optionId);
+        } catch (Exception e) {
+            System.err.println("❌ Error calculating or selecting height. Falling back to random height. " + e.getMessage());
+            e.printStackTrace();
+            // Fallback to a random height if parsing fails or option is not found
+            int randomOption = 8 + random.nextInt(60); // Assuming 60 options cover a reasonable range
+            return selectDropdown(driver, selectId, "mat-option-" + randomOption);
+        }
+    }
+
+    /**
+     * Fill SSN input field, handling potential input masks or special behaviors.
+     * This uses JavaScript to directly set the value and dispatch input/change events.
+     * This method also adds a WebDriverWait for the input field to be visible.
+     *
+     * @param driver The WebDriver instance.
+     * @param ssn The SSN string to enter.
+     * @return true if SSN was filled, false otherwise.
+     */
+    private static boolean fillSSNInput(WebDriver driver, String ssn) {
+        try {
+            System.out.println("Filling SSN input with: " + ssn);
+            WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
+            WebElement ssnInput = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[mask=\"000-00-0000\"]"))); // Use CSS selector for mask
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            Boolean result = (Boolean) js.executeScript(
+                    "var input = arguments[0];" +
+                            "if (input) {" +
+                            "  input.value = '" + ssn + "';" +
+                            "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  return true;" +
+                            "}" +
+                            "return false;", ssnInput
+            );
+
+            if (result != null && result) {
+                System.out.println("✅ SSN filled: " + ssn);
+                return true;
+            } else {
+                System.out.println("❌ SSN input element not found or script failed.");
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error filling SSN: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Fill date input field, specifically designed for date picker inputs.
+     * It uses JavaScript to directly set the value and trigger events, which is often
+     * more reliable for date inputs that might have complex UI components.
+     * This method also adds a WebDriverWait for the input field to be visible.
+     *
+     * @param driver The WebDriver instance.
+     * @param inputId The ID of the date input field.
+     * @param date The date string in "MM/dd/yyyy" format.
+     * @return true if the date was filled, false otherwise.
+     */
+    private static boolean fillDateInput(WebDriver driver, String inputId, String date) {
+        try {
+            System.out.println("Filling date input (ID: " + inputId + ") with: " + date);
+            WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
+            WebElement inputElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(inputId)));
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            Boolean result = (Boolean) js.executeScript(
+                    "var input = arguments[0];" + // Use arguments[0] to pass the WebElement directly
+                            "if (input) {" +
+                            "  input.value = '" + date + "';" +
+                            "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  return true;" +
+                            "}" +
+                            "return false;", inputElement // Pass the WebElement as an argument
+            );
+            if (result != null && result) {
+                System.out.println("✅ Filled date input: " + inputId + ": " + date);
+                return true;
+            } else {
+                System.out.println("❌ Failed to fill date input via JS: " + inputId);
+                // Fallback to standard fillInput if JS fails, though it might not work for complex date pickers
+                return fillInput(driver, inputId, date);
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error filling date input " + inputId + ": " + e.getMessage());
+            e.printStackTrace();
+            // Fallback to standard fillInput
+            return fillInput(driver, inputId, date);
+        }
+    }
+
+    /**
+     * Fill input by position (for dynamically added fields).
+     * This finds the target input based on its position from the end of all visible,
+     * non-readonly/non-disabled input elements.
+     * This method also adds a WebDriverWait for the input field to be visible.
+     *
+     * @param driver The WebDriver instance.
+     * @param position The position from the newest input (0 for newest, 1 for second newest, etc.).
+     * @param value The string value to enter.
+     * @return true if the input was filled, false otherwise.
+     */
+    private static boolean fillInputByPosition(WebDriver driver, int position, String value) {
+        try {
+            System.out.println("Filling input at position " + position + " with: " + value);
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
+
+            WebElement targetInput = wait.until(d -> {
+                List<WebElement> inputs = (List<WebElement>) js.executeScript(
+                        "return Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled])')).filter(i => i.offsetWidth > 0 || i.offsetHeight > 0);"
+                );
+                int targetIndex = inputs.size() - 1 - position;
+                if (targetIndex >= 0 && targetIndex < inputs.size()) {
+                    return inputs.get(targetIndex);
+                }
+                return null;
+            });
+
+            if (targetInput == null) {
+                System.out.println("❌ Failed to find input at position " + position);
+                return false;
+            }
+
+            Boolean result = (Boolean) js.executeScript(
+                    "var input = arguments[0];" + // Use arguments[0] to pass the WebElement directly
+                            "if (input) {" +
+                            "  input.value = '" + value + "';" +
+                            "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  return true;" +
+                            "}" +
+                            "return false;", targetInput // Pass the WebElement as an argument
+            );
+            if (result != null && result) {
+                System.out.println("✅ Filled input at position " + position + ": " + value);
+                return true;
+            } else {
+                System.out.println("❌ Failed to fill input at position " + position);
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error filling input by position " + position + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Fill date input by position (for dynamically added date fields).
+     * Similar to fillInputByPosition but specifically targets date inputs with a mask.
+     * This method also adds a WebDriverWait for the input field to be visible.
+     *
+     * @param driver The WebDriver instance.
+     * @param position The position from the newest date input (0 for newest, 1 for second newest, etc.).
+     * @param date The date string in "MM/dd/yyyy" format.
+     * @return true if the date input was filled, false otherwise.
+     */
+    private static boolean fillDateInputByPosition(WebDriver driver, int position, String date) {
+        try {
+            System.out.println("Filling date input at position " + position + " with: " + date);
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
+
+            WebElement targetInput = wait.until(d -> {
+                List<WebElement> inputs = (List<WebElement>) js.executeScript(
+                        "return Array.from(document.querySelectorAll('input[mask=\"00/00/0000\"]')).filter(i => i.offsetWidth > 0 || i.offsetHeight > 0);"
+                );
+                int targetIndex = inputs.size() - 1 - position;
+                if (targetIndex >= 0 && targetIndex < inputs.size()) {
+                    return inputs.get(targetIndex);
+                }
+                return null;
+            });
+
+            if (targetInput == null) {
+                System.out.println("❌ Failed to find date input at position " + position);
+                return false;
+            }
+
+            Boolean result = (Boolean) js.executeScript(
+                    "var input = arguments[0];" + // Use arguments[0] to pass the WebElement directly
+                            "if (input) {" +
+                            "  input.value = '" + date + "';" +
+                            "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  return true;" +
+                            "}" +
+                            "return false;", targetInput // Pass the WebElement as an argument
+            );
+            if (result != null && result) {
+                System.out.println("✅ Filled date input at position " + position + ": " + date);
+                return true;
+            } else {
+                System.out.println("❌ Failed to fill date input at position " + position);
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error filling date input by position " + position + ": " + e.getMessage());
             e.printStackTrace();
             return false;
         }
