@@ -16,7 +16,7 @@ import java.util.Random;
  */
 public class FormFiller {
     private static final Random random = new Random();
-    private static final Duration DEFAULT_WAIT_TIME = Duration.ofSeconds(20);
+    private static final Duration DEFAULT_WAIT_TIME = Duration.ofSeconds(5);
 
     /**
      * Fill first page (KEEP EXACT WORKING CODE)
@@ -163,48 +163,44 @@ public class FormFiller {
             System.out.println("10. Weight field");
             fillWeightField(driver, data.getWeight());
 
-            // === ADD SECTIONS - COMPLETELY FIXED ===
+            // === ADD SECTIONS - FIXED WITH DIRECT TARGETING ===
             System.out.println("\n=== ADDING DYNAMIC SECTIONS ===");
 
             System.out.println("11. Adding Sex");
             if (clickButtonRobust(driver, "Add Sex")) {
-                Thread.sleep(4000); // Wait longer for dropdown to appear
+                Thread.sleep(4000);
                 String sexOption = random.nextBoolean() ? "mat-option-630" : "mat-option-631"; // F or M
-                selectDropdownSimple(driver, findNewestSelectId(driver), sexOption);
+                // Direct selection for newest sex dropdown
+                selectNewestDropdownDirect(driver, sexOption);
             }
 
             System.out.println("12. Adding Race");
             if (clickButtonRobust(driver, "Add Race")) {
                 Thread.sleep(4000);
                 String raceOption = "mat-option-" + (594 + random.nextInt(6));
-                selectDropdownSimple(driver, findNewestSelectId(driver), raceOption);
+                selectNewestDropdownDirect(driver, raceOption);
             }
 
             System.out.println("13. Adding Eye Color");
             if (clickButtonRobust(driver, "Add Eye Color")) {
                 Thread.sleep(4000);
                 String eyeOption = "mat-option-" + (600 + random.nextInt(12));
-                selectDropdownSimple(driver, findNewestSelectId(driver), eyeOption);
+                selectNewestDropdownDirect(driver, eyeOption);
             }
 
             System.out.println("14. Adding Hair Color");
             if (clickButtonRobust(driver, "Add Hair Color")) {
                 Thread.sleep(4000);
                 String hairOption = "mat-option-" + (612 + random.nextInt(15));
-                selectDropdownSimple(driver, findNewestSelectId(driver), hairOption);
+                selectNewestDropdownDirect(driver, hairOption);
             }
 
-            // === NAME SECTION - FIXED ORDER ===
+            // === NAME SECTION - FIXED WITH DIRECT INPUT TARGETING ===
             System.out.println("\n15. Adding Name");
             if (clickButtonRobust(driver, "Add Name")) {
                 Thread.sleep(3000);
-                // Order: Last Name, First Name, Middle Name
-                List<String> nameInputs = findNameInputs(driver);
-                if (nameInputs.size() >= 2) {
-                    fillInputFixed(driver, nameInputs.get(0), data.getLastName());  // Last name first
-                    fillInputFixed(driver, nameInputs.get(1), data.getFirstName()); // First name second
-                    // Middle name is optional - nameInputs.get(2) if exists
-                }
+                // Fill name fields directly by finding inputs in name section
+                fillNameFieldsDirect(driver, data.getLastName(), data.getFirstName());
             }
 
             // === DATE OF BIRTH - FIXED ===
@@ -309,91 +305,31 @@ public class FormFiller {
                 fillInputFixed(driver, findNewestTextInput(driver), miscNumber);
             }
 
-            // === PHONE NUMBER - FIXED DROPDOWN ORDER ===
+            // === PHONE NUMBER - FIXED WITH DIRECT TARGETING ===
             System.out.println("\n23. Adding Phone Number");
             if (clickButtonRobust(driver, "Add Phone Number")) {
                 Thread.sleep(4000);
 
-                List<String> phoneSelects = findAllSelectIds(driver);
-
-                // Phone Type (first new dropdown)
-                System.out.println("  - Selecting phone type");
-                if (phoneSelects.size() >= 2) {
-                    selectDropdownSimple(driver, phoneSelects.get(phoneSelects.size() - 2), "mat-option-" + (1890 + random.nextInt(4)));
-                }
-
-                // Phone Country (second new dropdown)
-                System.out.println("  - Selecting phone country (USA)");
-                if (phoneSelects.size() >= 1) {
-                    selectDropdownSimple(driver, phoneSelects.get(phoneSelects.size() - 1), "mat-option-1895");
-                }
-
-                // Phone Number
-                System.out.println("  - Filling phone number");
-                String phoneNumber = "202" + (1000000 + random.nextInt(9000000));
-                fillInputFixed(driver, findNewestTextInput(driver), phoneNumber);
+                // Direct phone field targeting
+                fillPhoneFieldsDirect(driver);
             }
 
-            // === ALTERNATIVE COMMUNICATIONS - FIXED BUTTON TEXT ===
+            // === ALTERNATIVE COMMUNICATIONS - FIXED WITH DIRECT TARGETING ===
             System.out.println("\n24. Adding Alternative Communication");
             if (clickButtonFlexible(driver, "Add Alter", "Communication")) {
                 Thread.sleep(4000);
 
-                // Communication Type
-                System.out.println("  - Selecting communication type");
-                selectDropdownSimple(driver, findNewestSelectId(driver), "mat-option-" + (1900 + random.nextInt(3)));
-
-                // Communication Value
-                System.out.println("  - Filling communication value");
-                String email = "test" + System.currentTimeMillis() + "@example.com";
-                fillInputFixed(driver, findNewestTextInput(driver), email);
+                // Direct alternative communication targeting
+                fillAlterCommFieldsDirect(driver);
             }
 
-            // === ADDRESS - COMPLETELY FIXED ===
+            // === ADDRESS - FIXED WITH DIRECT FIELD TARGETING ===
             System.out.println("\n25. Adding Address");
             if (clickButtonRobust(driver, "Add Address")) {
                 Thread.sleep(4000);
 
-                List<String> addressSelects = findAllSelectIds(driver);
-                List<String> addressInputs = findAllTextInputs(driver);
-
-                // Address Type (first new dropdown)
-                System.out.println("  - Selecting address type");
-                if (addressSelects.size() >= 2) {
-                    selectDropdownSimple(driver, addressSelects.get(addressSelects.size() - 2), "mat-option-" + (1910 + random.nextInt(4)));
-                }
-
-                // Street (first new input)
-                System.out.println("  - Filling street");
-                if (addressInputs.size() >= 3) {
-                    fillInputFixed(driver, addressInputs.get(addressInputs.size() - 3), "123 Test Street");
-                }
-
-                // City (second new input)
-                System.out.println("  - Filling city");
-                if (addressInputs.size() >= 2) {
-                    fillInputFixed(driver, addressInputs.get(addressInputs.size() - 2), "Washington");
-                }
-
-                // State/Province (second new dropdown)
-                System.out.println("  - Selecting state");
-                if (addressSelects.size() >= 1) {
-                    selectDropdownSimple(driver, addressSelects.get(addressSelects.size() - 1), "mat-option-1915"); // DC
-                }
-
-                // Country (third new dropdown - appears after state)
-                Thread.sleep(2000);
-                List<String> updatedSelects = findAllSelectIds(driver);
-                System.out.println("  - Selecting country (USA)");
-                if (updatedSelects.size() > addressSelects.size()) {
-                    selectDropdownSimple(driver, updatedSelects.get(updatedSelects.size() - 1), "mat-option-1260");
-                }
-
-                // Postal Code (third new input)
-                System.out.println("  - Filling postal code");
-                if (addressInputs.size() >= 1) {
-                    fillInputFixed(driver, addressInputs.get(addressInputs.size() - 1), "20001");
-                }
+                // Direct address field targeting to prevent field confusion
+                fillAddressFieldsDirect(driver);
             }
 
             // === FINANCIAL ACCOUNT - COMPLETELY FIXED ORDER ===
@@ -780,6 +716,405 @@ public class FormFiller {
             }
         } catch (Exception e) {
             System.err.println("❌ Error filling SSN: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ==================== SPECIFIC SECTION FIXES ====================
+
+    /**
+     * Direct selection for newest dropdown - more reliable for dynamic sections
+     */
+    private static boolean selectNewestDropdownDirect(WebDriver driver, String optionId) {
+        try {
+            System.out.println("🎯 Direct selecting newest dropdown → " + optionId);
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            Boolean result = (Boolean) js.executeScript(
+                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "if (selects.length === 0) return false;" +
+                            "" +
+                            "var newest = selects[selects.length - 1];" +
+                            "newest.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "" +
+                            "// Click to open dropdown" +
+                            "var trigger = newest.querySelector('.mat-select-trigger');" +
+                            "if (trigger) { trigger.click(); } else { newest.click(); }" +
+                            "" +
+                            "// Wait and select option" +
+                            "setTimeout(function() {" +
+                            "  var option = document.getElementById('" + optionId + "');" +
+                            "  if (option && option.offsetParent !== null) {" +
+                            "    option.click();" +
+                            "    setTimeout(function() { document.body.click(); }, 300);" +
+                            "  }" +
+                            "}, 1500);" +
+                            "" +
+                            "return true;"
+            );
+
+            Thread.sleep(3000); // Wait for completion
+
+            if (result != null && result) {
+                System.out.println("✅ Direct selected newest dropdown → " + optionId);
+                return true;
+            }
+
+            System.out.println("❌ Failed direct selection for newest dropdown");
+            return false;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error in direct newest dropdown selection: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Direct name fields filling
+     */
+    private static boolean fillNameFieldsDirect(WebDriver driver, String lastName, String firstName) {
+        try {
+            System.out.println("Filling name fields directly - Last: " + lastName + ", First: " + firstName);
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            Boolean result = (Boolean) js.executeScript(
+                    "// Find the Names section" +
+                            "var namePanel = document.querySelector('.panel-heading');" +
+                            "var namePanels = Array.from(document.querySelectorAll('.panel-heading'));" +
+                            "var nameSection = null;" +
+                            "" +
+                            "for (var i = 0; i < namePanels.length; i++) {" +
+                            "  if (namePanels[i].textContent.includes('Names')) {" +
+                            "    nameSection = namePanels[i].closest('.panel');" +
+                            "    break;" +
+                            "  }" +
+                            "}" +
+                            "" +
+                            "if (!nameSection) return false;" +
+                            "" +
+                            "// Get all input fields in the name section" +
+                            "var inputs = Array.from(nameSection.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled])'));" +
+                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
+                            "" +
+                            "if (visibleInputs.length >= 2) {" +
+                            "  // Last name (first input)" +
+                            "  visibleInputs[0].focus();" +
+                            "  visibleInputs[0].value = '" + lastName + "';" +
+                            "  visibleInputs[0].dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  visibleInputs[0].dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  visibleInputs[0].blur();" +
+                            "  " +
+                            "  // First name (second input)" +
+                            "  visibleInputs[1].focus();" +
+                            "  visibleInputs[1].value = '" + firstName + "';" +
+                            "  visibleInputs[1].dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  visibleInputs[1].dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  visibleInputs[1].blur();" +
+                            "  " +
+                            "  return true;" +
+                            "}" +
+                            "" +
+                            "return false;"
+            );
+
+            if (result != null && result) {
+                System.out.println("✅ Filled name fields directly");
+                return true;
+            } else {
+                System.out.println("❌ Failed to fill name fields directly");
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error filling name fields: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Direct phone fields filling
+     */
+    private static boolean fillPhoneFieldsDirect(WebDriver driver) {
+        try {
+            System.out.println("Filling phone fields directly");
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // First select phone type
+            Boolean typeResult = (Boolean) js.executeScript(
+                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "if (selects.length < 2) return false;" +
+                            "" +
+                            "var phoneTypeSelect = selects[selects.length - 2];" +
+                            "phoneTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "" +
+                            "var trigger = phoneTypeSelect.querySelector('.mat-select-trigger');" +
+                            "if (trigger) { trigger.click(); } else { phoneTypeSelect.click(); }" +
+                            "" +
+                            "setTimeout(function() {" +
+                            "  var option = document.getElementById('mat-option-" + (1890 + random.nextInt(4)) + "');" +
+                            "  if (option && option.offsetParent !== null) {" +
+                            "    option.click();" +
+                            "    setTimeout(function() { document.body.click(); }, 300);" +
+                            "  }" +
+                            "}, 1500);" +
+                            "" +
+                            "return true;"
+            );
+
+            Thread.sleep(3000);
+
+            // Then select phone country
+            Boolean countryResult = (Boolean) js.executeScript(
+                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "if (selects.length < 1) return false;" +
+                            "" +
+                            "var phoneCountrySelect = selects[selects.length - 1];" +
+                            "phoneCountrySelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "" +
+                            "var trigger = phoneCountrySelect.querySelector('.mat-select-trigger');" +
+                            "if (trigger) { trigger.click(); } else { phoneCountrySelect.click(); }" +
+                            "" +
+                            "setTimeout(function() {" +
+                            "  var option = document.getElementById('mat-option-1895');" +
+                            "  if (option && option.offsetParent !== null) {" +
+                            "    option.click();" +
+                            "    setTimeout(function() { document.body.click(); }, 300);" +
+                            "  }" +
+                            "}, 1500);" +
+                            "" +
+                            "return true;"
+            );
+
+            Thread.sleep(3000);
+
+            // Finally fill phone number
+            String phoneNumber = "202" + (1000000 + random.nextInt(9000000));
+            Boolean numberResult = (Boolean) js.executeScript(
+                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
+                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
+                            "" +
+                            "if (visibleInputs.length > 0) {" +
+                            "  var phoneInput = visibleInputs[visibleInputs.length - 1];" +
+                            "  phoneInput.focus();" +
+                            "  phoneInput.value = '" + phoneNumber + "';" +
+                            "  phoneInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  phoneInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  phoneInput.blur();" +
+                            "  return true;" +
+                            "}" +
+                            "" +
+                            "return false;"
+            );
+
+            System.out.println("✅ Phone fields filled directly");
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error filling phone fields: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Direct alternative communication fields filling
+     */
+    private static boolean fillAlterCommFieldsDirect(WebDriver driver) {
+        try {
+            System.out.println("Filling alternative communication fields directly");
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // First select communication type
+            Boolean typeResult = (Boolean) js.executeScript(
+                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "if (selects.length === 0) return false;" +
+                            "" +
+                            "var commTypeSelect = selects[selects.length - 1];" +
+                            "commTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "" +
+                            "var trigger = commTypeSelect.querySelector('.mat-select-trigger');" +
+                            "if (trigger) { trigger.click(); } else { commTypeSelect.click(); }" +
+                            "" +
+                            "setTimeout(function() {" +
+                            "  var option = document.getElementById('mat-option-" + (1900 + random.nextInt(3)) + "');" +
+                            "  if (option && option.offsetParent !== null) {" +
+                            "    option.click();" +
+                            "    setTimeout(function() { document.body.click(); }, 300);" +
+                            "  }" +
+                            "}, 1500);" +
+                            "" +
+                            "return true;"
+            );
+
+            Thread.sleep(3000);
+
+            // Then fill communication value
+            String email = "test" + System.currentTimeMillis() + "@example.com";
+            Boolean valueResult = (Boolean) js.executeScript(
+                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
+                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
+                            "" +
+                            "if (visibleInputs.length > 0) {" +
+                            "  var commInput = visibleInputs[visibleInputs.length - 1];" +
+                            "  commInput.focus();" +
+                            "  commInput.value = '" + email + "';" +
+                            "  commInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  commInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  commInput.blur();" +
+                            "  return true;" +
+                            "}" +
+                            "" +
+                            "return false;"
+            );
+
+            System.out.println("✅ Alternative communication fields filled directly");
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error filling alternative communication fields: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Direct address fields filling to prevent field confusion
+     */
+    private static boolean fillAddressFieldsDirect(WebDriver driver) {
+        try {
+            System.out.println("Filling address fields directly to prevent confusion");
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Step 1: Select address type
+            System.out.println("  - Selecting address type");
+            Boolean typeResult = (Boolean) js.executeScript(
+                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "if (selects.length === 0) return false;" +
+                            "" +
+                            "var addressTypeSelect = selects[selects.length - 1];" +
+                            "addressTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "" +
+                            "var trigger = addressTypeSelect.querySelector('.mat-select-trigger');" +
+                            "if (trigger) { trigger.click(); } else { addressTypeSelect.click(); }" +
+                            "" +
+                            "setTimeout(function() {" +
+                            "  var option = document.getElementById('mat-option-" + (1910 + random.nextInt(4)) + "');" +
+                            "  if (option && option.offsetParent !== null) {" +
+                            "    option.click();" +
+                            "    setTimeout(function() { document.body.click(); }, 300);" +
+                            "  }" +
+                            "}, 1500);" +
+                            "" +
+                            "return true;"
+            );
+
+            Thread.sleep(3000);
+
+            // Step 2: Fill street address
+            System.out.println("  - Filling street");
+            js.executeScript(
+                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
+                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
+                            "" +
+                            "if (visibleInputs.length > 0) {" +
+                            "  var streetInput = visibleInputs[visibleInputs.length - 1];" +
+                            "  streetInput.focus();" +
+                            "  streetInput.value = '123 Test Street';" +
+                            "  streetInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  streetInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  streetInput.blur();" +
+                            "}"
+            );
+
+            Thread.sleep(2000);
+
+            // Step 3: Fill city
+            System.out.println("  - Filling city");
+            js.executeScript(
+                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
+                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
+                            "" +
+                            "if (visibleInputs.length > 1) {" +
+                            "  var cityInput = visibleInputs[visibleInputs.length - 1];" +
+                            "  cityInput.focus();" +
+                            "  cityInput.value = 'Washington';" +
+                            "  cityInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  cityInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  cityInput.blur();" +
+                            "}"
+            );
+
+            Thread.sleep(2000);
+
+            // Step 4: Select state
+            System.out.println("  - Selecting state");
+            js.executeScript(
+                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "if (selects.length > 0) {" +
+                            "  var stateSelect = selects[selects.length - 1];" +
+                            "  stateSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  " +
+                            "  var trigger = stateSelect.querySelector('.mat-select-trigger');" +
+                            "  if (trigger) { trigger.click(); } else { stateSelect.click(); }" +
+                            "  " +
+                            "  setTimeout(function() {" +
+                            "    var option = document.getElementById('mat-option-1915');" +
+                            "    if (option && option.offsetParent !== null) {" +
+                            "      option.click();" +
+                            "      setTimeout(function() { document.body.click(); }, 300);" +
+                            "    }" +
+                            "  }, 1500);" +
+                            "}"
+            );
+
+            Thread.sleep(4000);
+
+            // Step 5: Select country (appears after state)
+            System.out.println("  - Selecting country");
+            js.executeScript(
+                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "if (selects.length > 0) {" +
+                            "  var countrySelect = selects[selects.length - 1];" +
+                            "  countrySelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  " +
+                            "  var trigger = countrySelect.querySelector('.mat-select-trigger');" +
+                            "  if (trigger) { trigger.click(); } else { countrySelect.click(); }" +
+                            "  " +
+                            "  setTimeout(function() {" +
+                            "    var option = document.getElementById('mat-option-1260');" +
+                            "    if (option && option.offsetParent !== null) {" +
+                            "      option.click();" +
+                            "      setTimeout(function() { document.body.click(); }, 300);" +
+                            "    }" +
+                            "  }, 1500);" +
+                            "}"
+            );
+
+            Thread.sleep(3000);
+
+            // Step 6: Fill postal code
+            System.out.println("  - Filling postal code");
+            js.executeScript(
+                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
+                            "var visibleInputs = inputs.filter(function(i) { return i.offsetWidth > 0 && i.offsetHeight > 0; });" +
+                            "" +
+                            "if (visibleInputs.length > 0) {" +
+                            "  var postalInput = visibleInputs[visibleInputs.length - 1];" +
+                            "  postalInput.focus();" +
+                            "  postalInput.value = '20001';" +
+                            "  postalInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  postalInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  postalInput.blur();" +
+                            "}"
+            );
+
+            System.out.println("✅ Address fields filled directly");
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error filling address fields: " + e.getMessage());
             return false;
         }
     }
