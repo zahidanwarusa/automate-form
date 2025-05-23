@@ -42,9 +42,8 @@ public class FormFiller {
 
             System.out.println("Filling DOB: " + data.getDob());
             // Ensure DOB input is correctly targeted. If 'dob' is the ID, this should work.
-            // If it's a date picker, the fillDateInput method might be better, but for initial page,
-            // direct sendKeys is often sufficient for masked inputs.
-            waitAndSendKeys(driver, By.id("dob"), data.getDob());
+            // Using fillDateInput for DOB here as well for consistency and robustness with date pickers.
+            fillDateInput(driver, "dob", data.getDob());
 
             // Click search
             System.out.println("Clicking SEARCH button...");
@@ -400,11 +399,19 @@ public class FormFiller {
                             "    return;" +
                             "  }" +
                             "  " +
-                            "  // Scroll into view and click the select element to open the dropdown panel" +
-                            "  select.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  // Find the mat-select-trigger within the mat-select and click it" +
+                            "  var trigger = select.querySelector('.mat-select-trigger');" + // Target the trigger
+                            "  if (!trigger) {" +
+                            "    console.error('Mat-select-trigger not found for: " + selectId + "');" +
+                            "    resolve(false);" +
+                            "    return;" +
+                            "  }" +
+                            "  " +
+                            "  // Scroll into view and click the trigger to open the dropdown panel" +
+                            "  trigger.scrollIntoView({behavior: 'smooth', block: 'center'});" +
                             "  setTimeout(() => {" +
-                            "    select.click();" +
-                            "    console.log('Clicked select, waiting for panel to appear...');" +
+                            "    trigger.click();" + // Click the trigger
+                            "    console.log('Clicked mat-select-trigger, waiting for panel to appear...');" +
                             "    " +
                             "    // Wait for the dropdown panel to appear and then attempt to click the option" +
                             "    setTimeout(() => {" +
@@ -537,15 +544,23 @@ public class FormFiller {
                             "  var targetSelect = selects[targetIndex];" +
                             "  " +
                             "  if (!targetSelect) {" +
-                            "    console.error('No dropdown found at calculated position " + position + " (index ' + targetIndex + ').');" + // Corrected concatenation for targetIndex
+                            "    console.error('No dropdown found at calculated position " + position + " (index ' + targetIndex + ').');" +
+                            "    resolve(false);" +
+                            "    return;" +
+                            "  }" +
+                            "  " +
+                            "  // Find the mat-select-trigger within the target mat-select and click it" +
+                            "  var trigger = targetSelect.querySelector('.mat-select-trigger');" + // Target the trigger
+                            "  if (!trigger) {" +
+                            "    console.error('Mat-select-trigger not found for dropdown at position " + position + "');" +
                             "    resolve(false);" +
                             "    return;" +
                             "  }" +
                             "  " +
                             "  // Scroll the target dropdown into view and click it to open the panel" +
-                            "  targetSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  trigger.scrollIntoView({behavior: 'smooth', block: 'center'});" +
                             "  setTimeout(() => {" +
-                            "    targetSelect.click();" +
+                            "    trigger.click();" + // Click the trigger
                             "    console.log('Clicked dropdown at position " + position + ", waiting for options...');" +
                             "    " +
                             "    // Wait for options to appear and then click the desired option" +
@@ -691,6 +706,7 @@ public class FormFiller {
      */
     private static boolean fillSSNInput(WebDriver driver, String ssn) {
         try {
+            System.out.println("Filling SSN input with: " + ssn);
             JavascriptExecutor js = (JavascriptExecutor) driver;
             // Find inputs with the specific SSN mask and target the newest one
             Boolean result = (Boolean) js.executeScript(
@@ -723,6 +739,7 @@ public class FormFiller {
      * Fill date input field, specifically designed for date picker inputs.
      * It uses JavaScript to directly set the value and trigger events, which is often
      * more reliable for date inputs that might have complex UI components.
+     * This method also adds a WebDriverWait for the input field to be visible.
      *
      * @param driver The WebDriver instance.
      * @param inputId The ID of the date input field.
@@ -732,16 +749,19 @@ public class FormFiller {
     private static boolean fillDateInput(WebDriver driver, String inputId, String date) {
         try {
             System.out.println("Filling date input (ID: " + inputId + ") with: " + date);
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            WebElement inputElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(inputId)));
+
             JavascriptExecutor js = (JavascriptExecutor) driver;
             Boolean result = (Boolean) js.executeScript(
-                    "var input = document.getElementById('" + inputId + "');" +
+                    "var input = arguments[0];" + // Use arguments[0] to pass the WebElement directly
                             "if (input) {" +
                             "  input.value = '" + date + "';" +
                             "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
                             "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
                             "  return true;" +
                             "}" +
-                            "return false;"
+                            "return false;", inputElement // Pass the WebElement as an argument
             );
             if (result != null && result) {
                 System.out.println("✅ Filled date input: " + inputId + ": " + date);
@@ -763,6 +783,7 @@ public class FormFiller {
      * Fill input by position (for dynamically added fields).
      * This finds the target input based on its position from the end of all visible,
      * non-readonly/non-disabled input elements.
+     * This method also adds a WebDriverWait for the input field to be visible.
      *
      * @param driver The WebDriver instance.
      * @param position The position from the newest input (0 for newest, 1 for second newest, etc.).
@@ -773,17 +794,34 @@ public class FormFiller {
         try {
             System.out.println("Filling input at position " + position + " with: " + value);
             JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Find all inputs and filter for visible ones, then select by position
+            WebElement targetInput = null;
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            // Wait until there are enough inputs to select the target position
+            wait.until(d -> {
+                List<WebElement> inputs = (List<WebElement>) js.executeScript(
+                        "return Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled])')).filter(i => i.offsetWidth > 0 || i.offsetHeight > 0);"
+                );
+                return inputs.size() > position;
+            });
+
+            // Re-query elements after waiting to ensure we get the latest state
+            List<WebElement> inputs = (List<WebElement>) js.executeScript(
+                    "return Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled])')).filter(i => i.offsetWidth > 0 || i.offsetHeight > 0);"
+            );
+            targetInput = inputs.get(inputs.size() - 1 - position);
+
+
             Boolean result = (Boolean) js.executeScript(
-                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled])');" +
-                            "var visibleInputs = Array.from(inputs).filter(i => i.offsetWidth > 0 || i.offsetHeight > 0);" + // Check visibility
-                            "var targetInput = visibleInputs[visibleInputs.length - 1 - " + position + "];" +
-                            "if (targetInput) {" +
-                            "  targetInput.value = '" + value + "';" +
-                            "  targetInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  targetInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                    "var input = arguments[0];" + // Use arguments[0] to pass the WebElement directly
+                            "if (input) {" +
+                            "  input.value = '" + value + "';" +
+                            "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
                             "  return true;" +
                             "}" +
-                            "return false;"
+                            "return false;", targetInput // Pass the WebElement as an argument
             );
             if (result != null && result) {
                 System.out.println("✅ Filled input at position " + position + ": " + value);
@@ -802,6 +840,7 @@ public class FormFiller {
     /**
      * Fill date input by position (for dynamically added date fields).
      * Similar to fillInputByPosition but specifically targets date inputs with a mask.
+     * This method also adds a WebDriverWait for the input field to be visible.
      *
      * @param driver The WebDriver instance.
      * @param position The position from the newest date input (0 for newest, 1 for second newest, etc.).
@@ -812,17 +851,32 @@ public class FormFiller {
         try {
             System.out.println("Filling date input at position " + position + " with: " + date);
             JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            WebElement targetInput = null;
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            // Wait until there are enough date inputs to select the target position
+            wait.until(d -> {
+                List<WebElement> inputs = (List<WebElement>) js.executeScript(
+                        "return Array.from(document.querySelectorAll('input[mask=\"00/00/0000\"]')).filter(i => i.offsetWidth > 0 || i.offsetHeight > 0);"
+                );
+                return inputs.size() > position;
+            });
+
+            // Re-query elements after waiting to ensure we get the latest state
+            List<WebElement> inputs = (List<WebElement>) js.executeScript(
+                    "return Array.from(document.querySelectorAll('input[mask=\"00/00/0000\"]')).filter(i => i.offsetWidth > 0 || i.offsetHeight > 0);"
+            );
+            targetInput = inputs.get(inputs.size() - 1 - position);
+
             Boolean result = (Boolean) js.executeScript(
-                    "var inputs = document.querySelectorAll('input[mask=\"00/00/0000\"]');" +
-                            "var visibleInputs = Array.from(inputs).filter(i => i.offsetWidth > 0 || i.offsetHeight > 0);" + // Check visibility
-                            "var targetInput = visibleInputs[visibleInputs.length - 1 - " + position + "];" +
-                            "if (targetInput) {" +
-                            "  targetInput.value = '" + date + "';" +
-                            "  targetInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  targetInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                    "var input = arguments[0];" + // Use arguments[0] to pass the WebElement directly
+                            "if (input) {" +
+                            "  input.value = '" + date + "';" +
+                            "  input.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  input.dispatchEvent(new Event('change', {bubbles: true}));" +
                             "  return true;" +
                             "}" +
-                            "return false;"
+                            "return false;", targetInput // Pass the WebElement as an argument
             );
             if (result != null && result) {
                 System.out.println("✅ Filled date input at position " + position + ": " + date);
@@ -865,6 +919,7 @@ public class FormFiller {
 
     /**
      * Fill textarea field.
+     * This method also adds a WebDriverWait for the textarea to be visible.
      *
      * @param driver The WebDriver instance.
      * @param textareaId The ID of the textarea element.
@@ -873,7 +928,9 @@ public class FormFiller {
      */
     private static boolean fillTextarea(WebDriver driver, String textareaId, String value) {
         try {
-            WebElement textarea = driver.findElement(By.id(textareaId));
+            System.out.println("Filling textarea: " + textareaId + " with: " + value);
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            WebElement textarea = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(textareaId)));
             textarea.clear();
             textarea.sendKeys(value);
             System.out.println("✅ Filled textarea: " + textareaId);
@@ -888,20 +945,25 @@ public class FormFiller {
     /**
      * Check and click submit button if enabled.
      * This method uses JavaScript to find a submit button and click it only if it's not disabled.
+     * This method also adds a WebDriverWait for the submit button to be clickable.
      *
      * @param driver The WebDriver instance.
      * @return true if the submit button was clicked, false otherwise.
      */
     private static boolean checkAndClickSubmit(WebDriver driver) {
         try {
+            System.out.println("Checking for SUBMIT button...");
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            WebElement submitBtn = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("button.submit-button, button[type=\"submit\"], button[aria-label*=\"Submit\"], button[title*=\"Submit\"]")));
+
             JavascriptExecutor js = (JavascriptExecutor) driver;
             Boolean result = (Boolean) js.executeScript(
-                    "var submitBtn = document.querySelector('button.submit-button, button[type=\"submit\"], button[aria-label*=\"Submit\"], button[title*=\"Submit\"]');" +
+                    "var submitBtn = arguments[0];" + // Pass WebElement as argument
                             "if (submitBtn && !submitBtn.disabled) {" +
                             "  submitBtn.click();" +
                             "  return true;" +
                             "}" +
-                            "return false;"
+                            "return false;", submitBtn // Pass the WebElement
             );
 
             if (result != null && result) {
@@ -961,6 +1023,7 @@ public class FormFiller {
      * ROBUST button clicking - handles interception using JavaScript, with optional ID.
      * This method first attempts to remove any blocking overlays, then uses JavaScript
      * to find and click the button, either by its ID or by its text content.
+     * This method also adds a WebDriverWait for the button to be clickable.
      *
      * @param driver The WebDriver instance.
      * @param identifier The text content of the button or its ID.
@@ -985,39 +1048,27 @@ public class FormFiller {
             );
             Thread.sleep(500); // Give a moment for overlays to be removed
 
-            // Use JavaScript to find and click button, prioritizing ID if available
-            String script =
-                    "var button = document.getElementById('" + identifier.replace("'", "\\'") + "');" +
-                            "if (button && (button.offsetWidth > 0 || button.offsetHeight > 0)) {" + // Check if visible
-                            "  button.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "  setTimeout(function() { button.click(); }, 500);" +
-                            "  return true;" +
-                            "}";
+            WebElement targetButton = null;
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-            // If identifier is not an ID or ID button not found/visible, search by text content
-            String searchText = (textFallback != null) ? textFallback : identifier;
-            script +=
-                    "var buttons = document.querySelectorAll('button, a[role=\"button\"], cbp-button button');" + // Include cbp-button
-                            "for (var i = 0; i < buttons.length; i++) {" +
-                            "  var text = buttons[i].textContent.trim();" +
-                            "  if (text.includes('" + searchText.replace("'", "\\'") + "') && (buttons[i].offsetWidth > 0 || buttons[i].offsetHeight > 0)) {" + // Check visibility
-                            "    buttons[i].scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "    setTimeout(function() { buttons[i].click(); }, 500);" +
-                            "    return true;" +
-                            "  }" +
-                            "}" +
-                            "return false;";
-
-            Boolean result = (Boolean) js.executeScript(script);
-
-            if (result != null && result) {
-                Thread.sleep(1000); // Wait for the click action to register and page to react
-                System.out.println("✅ Clicked button: " + identifier + (textFallback != null ? " (via text: " + textFallback + ")" : ""));
-                return true;
+            try {
+                // Try to find by ID first
+                targetButton = wait.until(ExpectedConditions.elementToBeClickable(By.id(identifier)));
+            } catch (Exception e) {
+                // If not found by ID, try to find by text content
+                String xpath = "//button[contains(normalize-space(.), '" + identifier + "')] | //a[contains(normalize-space(.), '" + identifier + "')] | //cbp-button//button[contains(normalize-space(.), '" + identifier + "')]";
+                if (textFallback != null) {
+                    xpath += " | //button[contains(normalize-space(.), '" + textFallback + "')] | //a[contains(normalize-space(.), '" + textFallback + "')] | //cbp-button//button[contains(normalize-space(.), '" + textFallback + "')]";
+                }
+                targetButton = wait.until(ExpectedConditions.elementToBeClickable(By.xpath(xpath)));
             }
 
-            System.out.println("❌ Button not found or not clickable: " + identifier + (textFallback != null ? " (text: " + textFallback + ")" : ""));
-            return false;
+            // Click the element using JavaScript for robustness
+            js.executeScript("arguments[0].click();", targetButton);
+
+            Thread.sleep(1000); // Wait for the click action to register and page to react
+            System.out.println("✅ Clicked button: " + identifier + (textFallback != null ? " (via text: " + textFallback + ")" : ""));
+            return true;
 
         } catch (Exception e) {
             System.out.println("❌ Error clicking button '" + identifier + "': " + e.getMessage());
@@ -1029,6 +1080,7 @@ public class FormFiller {
     /**
      * Simple button clicking (KEEP WORKING VERSION).
      * This method uses Selenium's findElement by XPath.
+     * This method also adds a WebDriverWait for the button to be clickable.
      *
      * @param driver The WebDriver instance.
      * @param buttonText The text content of the button.
@@ -1036,20 +1088,20 @@ public class FormFiller {
      */
     private static boolean clickButtonSimple(WebDriver driver, String buttonText) {
         try {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            WebElement button = null;
             try {
-                WebElement button = driver.findElement(By.xpath("//button[contains(text(), '" + buttonText + "')]"));
-                button.click();
-                System.out.println("✅ Clicked simple button (button tag): " + buttonText);
-                return true;
+                button = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[contains(text(), '" + buttonText + "')]")));
             } catch (Exception e) {
                 // Fallback to 'a' tag if button not found
-                WebElement button = driver.findElement(By.xpath("//a[contains(text(), '" + buttonText + "')]"));
-                button.click();
-                System.out.println("✅ Clicked simple button (a tag): " + buttonText);
-                return true;
+                button = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[contains(text(), '" + buttonText + "')]")));
             }
+            button.click();
+            System.out.println("✅ Clicked simple button: " + buttonText);
+            return true;
         } catch (Exception e) {
             System.out.println("❌ Failed to click simple button '" + buttonText + "': " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
@@ -1057,6 +1109,7 @@ public class FormFiller {
     /**
      * Fill input field (KEEP WORKING VERSION).
      * This method clears an input field and then sends keys to it.
+     * This method also adds a WebDriverWait for the input field to be visible.
      *
      * @param driver The WebDriver instance.
      * @param inputId The ID of the input element.
@@ -1065,7 +1118,9 @@ public class FormFiller {
      */
     private static boolean fillInput(WebDriver driver, String inputId, String value) {
         try {
-            WebElement input = driver.findElement(By.id(inputId));
+            System.out.println("Filling input: " + inputId + " with: " + value);
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            WebElement input = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(inputId)));
             input.clear();
             input.sendKeys(value);
             System.out.println("✅ Filled " + inputId + ": " + value);
@@ -1080,6 +1135,7 @@ public class FormFiller {
     /**
      * Wait for element visibility and send keys (KEEP WORKING VERSION).
      * This method waits for an element to be visible before clearing and sending keys.
+     * This method also adds a WebDriverWait for the element to be visible.
      *
      * @param driver The WebDriver instance.
      * @param by The By locator strategy for the element.
@@ -1088,6 +1144,7 @@ public class FormFiller {
      */
     private static boolean waitAndSendKeys(WebDriver driver, By by, String text) {
         try {
+            System.out.println("Waiting for element " + by + " and sending keys: " + text);
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
             WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(by));
             element.clear();
