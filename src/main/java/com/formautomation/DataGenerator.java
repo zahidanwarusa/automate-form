@@ -8,7 +8,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Utility class for generating random person data
+ * FIXED Utility class for generating random person data
  */
 public class DataGenerator {
 
@@ -16,7 +16,7 @@ public class DataGenerator {
     private static final Random random = new Random();
 
     /**
-     * Generate random person data
+     * FIXED Generate random person data
      * @return PersonData object with randomly generated data
      */
     public static PersonData generatePersonData() {
@@ -69,14 +69,18 @@ public class DataGenerator {
                 1000 + random.nextInt(9000));
         data.setSsn(ssn);
 
-        // Generate height (in feet and inches format: x' y")
+        // FIXED: Generate height (in feet and inches format: x' y")
         int feet = 5 + random.nextInt(2); // 5 or 6 feet
         int inches = random.nextInt(12); // 0-11 inches
-        data.setHeight(feet + "' " + inches + "\"");
+        String height = feet + "' " + inches + "\"";
+        data.setHeight(height);
+        System.out.println("Generated height: " + height);
 
-        // Generate weight (in pounds, 100-250)
+        // FIXED: Generate weight (in pounds, 100-250)
         int weight = 100 + random.nextInt(151);
-        data.setWeight(String.valueOf(weight));
+        String weightStr = String.valueOf(weight);
+        data.setWeight(weightStr);
+        System.out.println("Generated weight: " + weightStr);
 
         System.out.println("Generated random person data: " + data);
         return data;

@@ -127,10 +127,21 @@ public class FormFiller {
             System.out.println("5. Exclusions dropdown (ANCX - NIV EXEMPTION)");
             selectDropdownFixed(driver, "mat-select-12", "mat-option-253");
 
-            // EXCLUSION SITE - FIXED (appears after selecting exclusion)
-            Thread.sleep(2000); // Wait for exclusion site to appear
+            // EXCLUSION SITE - WAIT AND RETRY FIXED
+            Thread.sleep(3000); // Wait longer for exclusion site to appear
             System.out.println("6. Exclusion Site dropdown (PRS - PARIS)");
-            selectNewestDropdownFixed(driver, "mat-option-627");
+            // Try multiple times as this dropdown appears after the exclusion selection
+            boolean exclusionSiteSelected = false;
+            for (int i = 0; i < 3; i++) {
+                if (selectDropdownSimple(driver, "mat-select-25", "mat-option-627")) {
+                    exclusionSiteSelected = true;
+                    break;
+                }
+                Thread.sleep(1000);
+            }
+            if (!exclusionSiteSelected) {
+                System.out.println("❌ Failed to select exclusion site after retries");
+            }
 
             // === FORM FIELDS - FIXED ===
             System.out.println("\n=== FILLING TEXT FIELDS ===");
@@ -145,62 +156,70 @@ public class FormFiller {
             selectDropdownFixed(driver, "mat-select-0", "mat-option-2");
 
             System.out.println("9. Height dropdown");
-            selectDropdownFixed(driver, "mat-select-2", calculateHeightOption(data.getHeight()));
+            String heightOption = calculateHeightOption(data.getHeight());
+            System.out.println("   Calculated height option: " + heightOption + " for height: " + data.getHeight());
+            selectDropdownFixed(driver, "mat-select-2", heightOption);
 
             System.out.println("10. Weight field");
-            fillInputFixed(driver, findInputByMask(driver, "0*", 0), data.getWeight());
+            fillWeightField(driver, data.getWeight());
 
             // === ADD SECTIONS - COMPLETELY FIXED ===
             System.out.println("\n=== ADDING DYNAMIC SECTIONS ===");
 
             System.out.println("11. Adding Sex");
             if (clickButtonRobust(driver, "Add Sex")) {
-                Thread.sleep(3000);
-                selectNewestDropdownFixed(driver, random.nextBoolean() ? "mat-option-630" : "mat-option-631"); // F or M
+                Thread.sleep(4000); // Wait longer for dropdown to appear
+                String sexOption = random.nextBoolean() ? "mat-option-630" : "mat-option-631"; // F or M
+                selectDropdownSimple(driver, findNewestSelectId(driver), sexOption);
             }
 
             System.out.println("12. Adding Race");
             if (clickButtonRobust(driver, "Add Race")) {
-                Thread.sleep(3000);
+                Thread.sleep(4000);
                 String raceOption = "mat-option-" + (594 + random.nextInt(6));
-                selectNewestDropdownFixed(driver, raceOption);
+                selectDropdownSimple(driver, findNewestSelectId(driver), raceOption);
             }
 
             System.out.println("13. Adding Eye Color");
             if (clickButtonRobust(driver, "Add Eye Color")) {
-                Thread.sleep(3000);
+                Thread.sleep(4000);
                 String eyeOption = "mat-option-" + (600 + random.nextInt(12));
-                selectNewestDropdownFixed(driver, eyeOption);
+                selectDropdownSimple(driver, findNewestSelectId(driver), eyeOption);
             }
 
             System.out.println("14. Adding Hair Color");
             if (clickButtonRobust(driver, "Add Hair Color")) {
-                Thread.sleep(3000);
+                Thread.sleep(4000);
                 String hairOption = "mat-option-" + (612 + random.nextInt(15));
-                selectNewestDropdownFixed(driver, hairOption);
+                selectDropdownSimple(driver, findNewestSelectId(driver), hairOption);
             }
 
-            // === NAME SECTION - FIXED ===
+            // === NAME SECTION - FIXED ORDER ===
             System.out.println("\n15. Adding Name");
             if (clickButtonRobust(driver, "Add Name")) {
                 Thread.sleep(3000);
-                fillInputFixed(driver, findNewestInput(driver, 0), data.getLastName());
-                fillInputFixed(driver, findNewestInput(driver, 1), data.getFirstName());
+                // Order: Last Name, First Name, Middle Name
+                List<String> nameInputs = findNameInputs(driver);
+                if (nameInputs.size() >= 2) {
+                    fillInputFixed(driver, nameInputs.get(0), data.getLastName());  // Last name first
+                    fillInputFixed(driver, nameInputs.get(1), data.getFirstName()); // First name second
+                    // Middle name is optional - nameInputs.get(2) if exists
+                }
             }
 
             // === DATE OF BIRTH - FIXED ===
             System.out.println("\n16. Adding DOB (Page 2)");
             if (clickButtonRobust(driver, "Add DOB")) {
                 Thread.sleep(3000);
-                String dobInputId = findDateInputByMask(driver, "00/00/0000", -1); // Get newest date input
+                String dobInputId = findNewestDateInput(driver);
                 fillDateInputFixed(driver, dobInputId, data.getDob());
             }
 
-            // === CITIZENSHIP - FIXED ===
+            // === CITIZENSHIP - ALREADY WORKING ===
             System.out.println("\n17. Adding Citizenship");
             if (clickButtonRobust(driver, "Add Citizenship")) {
                 Thread.sleep(3000);
-                selectNewestDropdownFixed(driver, "mat-option-1260"); // USA
+                selectDropdownSimple(driver, findNewestSelectId(driver), "mat-option-1260"); // USA
             }
 
             // === PASSPORT - COMPLETELY FIXED ===
@@ -208,49 +227,64 @@ public class FormFiller {
             if (clickButtonRobust(driver, "Add Passport")) {
                 Thread.sleep(4000);
 
-                // Passport Type
+                // Get all passport-related elements
+                List<String> passportSelects = findAllSelectIds(driver);
+                List<String> passportInputs = findAllTextInputs(driver);
+                List<String> passportDateInputs = findAllDateInputs(driver);
+
+                // Passport Type (first new dropdown)
                 System.out.println("  - Selecting passport type (P - Regular)");
-                selectNewestDropdownFixed(driver, "mat-option-1518");
+                if (passportSelects.size() > 0) {
+                    selectDropdownSimple(driver, passportSelects.get(passportSelects.size() - 2), "mat-option-1518");
+                }
 
-                // Passport Number
+                // Passport Number (first new text input)
                 System.out.println("  - Filling passport number");
-                fillInputFixed(driver, findNewestInput(driver, 0), data.getPassportNumber());
+                if (passportInputs.size() > 0) {
+                    fillInputFixed(driver, passportInputs.get(passportInputs.size() - 1), data.getPassportNumber());
+                }
 
-                // Passport Country
+                // Passport Country (second new dropdown)
                 System.out.println("  - Selecting passport country (USA)");
-                selectNewestDropdownFixed(driver, "mat-option-1520");
+                if (passportSelects.size() > 1) {
+                    selectDropdownSimple(driver, passportSelects.get(passportSelects.size() - 1), "mat-option-1520");
+                }
 
-                // Passport Issue Date
+                // Passport Issue Date (first new date input)
                 System.out.println("  - Filling passport issue date");
-                String issueInputId = findDateInputByMask(driver, "00/00/0000", -1);
-                fillDateInputFixed(driver, issueInputId, data.getPassportIssueDate());
+                if (passportDateInputs.size() > 1) {
+                    fillDateInputFixed(driver, passportDateInputs.get(passportDateInputs.size() - 2), data.getPassportIssueDate());
+                }
 
-                // Passport Expiry Date
+                // Passport Expiry Date (second new date input)
                 System.out.println("  - Filling passport expiry date");
-                String expiryInputId = findDateInputByMask(driver, "00/00/0000", -1);
-                fillDateInputFixed(driver, expiryInputId, data.getPassportExpiryDate());
+                if (passportDateInputs.size() > 0) {
+                    fillDateInputFixed(driver, passportDateInputs.get(passportDateInputs.size() - 1), data.getPassportExpiryDate());
+                }
             }
 
-            // === A NUMBER - FIXED ===
+            // === A NUMBER - ALREADY WORKING ===
             System.out.println("\n19. Adding A#");
             if (clickButtonRobust(driver, "Add A#")) {
                 Thread.sleep(3000);
-                fillInputFixed(driver, findNewestInput(driver, 0), data.getaNumber());
+                String aInputId = findNewestTextInput(driver);
+                fillInputFixed(driver, aInputId, data.getaNumber());
             }
 
-            // === DRIVER'S LICENSE - FIXED ===
+            // === DRIVER'S LICENSE - FIXED BUTTON TEXT ===
             System.out.println("\n20. Adding Driver's License");
-            if (clickButtonRobust(driver, "Add Driver's License")) {
+            if (clickButtonFlexible(driver, "Add Driver", "License")) {
                 Thread.sleep(4000);
 
                 // License Number
                 System.out.println("  - Filling license number");
-                fillInputFixed(driver, findNewestInput(driver, 0), data.getDriverLicense());
+                String licenseInputId = findNewestTextInput(driver);
+                fillInputFixed(driver, licenseInputId, data.getDriverLicense());
 
                 // License State
                 System.out.println("  - Selecting state");
                 String stateOption = "mat-option-" + (1774 + random.nextInt(62));
-                selectNewestDropdownFixed(driver, stateOption);
+                selectDropdownSimple(driver, findNewestSelectId(driver), stateOption);
             }
 
             // === SSN - ALREADY WORKING ===
@@ -260,53 +294,59 @@ public class FormFiller {
                 fillSSNInputFixed(driver, data.getSsn());
             }
 
-            // === MISC NUMBER - FIXED ===
+            // === MISC NUMBER - FIXED BUTTON FINDING ===
             System.out.println("\n22. Adding Misc Number");
-            if (clickButtonRobust(driver, "Add Misc Number")) {
+            if (clickButtonFlexible(driver, "Add Misc", "Number")) {
                 Thread.sleep(4000);
 
                 // Misc Type dropdown
                 System.out.println("  - Selecting misc type");
-                selectNewestDropdownFixed(driver, "mat-option-" + (1885 + random.nextInt(5)));
+                selectDropdownSimple(driver, findNewestSelectId(driver), "mat-option-" + (1885 + random.nextInt(5)));
 
                 // Misc Number
                 System.out.println("  - Filling misc number");
                 String miscNumber = "MISC" + (100000 + random.nextInt(900000));
-                fillInputFixed(driver, findNewestInput(driver, 0), miscNumber);
+                fillInputFixed(driver, findNewestTextInput(driver), miscNumber);
             }
 
-            // === PHONE NUMBER - FIXED ===
+            // === PHONE NUMBER - FIXED DROPDOWN ORDER ===
             System.out.println("\n23. Adding Phone Number");
             if (clickButtonRobust(driver, "Add Phone Number")) {
                 Thread.sleep(4000);
 
-                // Phone Type
-                System.out.println("  - Selecting phone type");
-                selectNewestDropdownFixed(driver, "mat-option-" + (1890 + random.nextInt(4)));
+                List<String> phoneSelects = findAllSelectIds(driver);
 
-                // Phone Country
+                // Phone Type (first new dropdown)
+                System.out.println("  - Selecting phone type");
+                if (phoneSelects.size() >= 2) {
+                    selectDropdownSimple(driver, phoneSelects.get(phoneSelects.size() - 2), "mat-option-" + (1890 + random.nextInt(4)));
+                }
+
+                // Phone Country (second new dropdown)
                 System.out.println("  - Selecting phone country (USA)");
-                selectSecondNewestDropdownFixed(driver, "mat-option-1895");
+                if (phoneSelects.size() >= 1) {
+                    selectDropdownSimple(driver, phoneSelects.get(phoneSelects.size() - 1), "mat-option-1895");
+                }
 
                 // Phone Number
                 System.out.println("  - Filling phone number");
                 String phoneNumber = "202" + (1000000 + random.nextInt(9000000));
-                fillInputFixed(driver, findNewestInput(driver, 0), phoneNumber);
+                fillInputFixed(driver, findNewestTextInput(driver), phoneNumber);
             }
 
-            // === ALTERNATIVE COMMUNICATIONS - FIXED ===
+            // === ALTERNATIVE COMMUNICATIONS - FIXED BUTTON TEXT ===
             System.out.println("\n24. Adding Alternative Communication");
-            if (clickButtonRobust(driver, "Add Alternative Communication")) {
+            if (clickButtonFlexible(driver, "Add Alter", "Communication")) {
                 Thread.sleep(4000);
 
                 // Communication Type
                 System.out.println("  - Selecting communication type");
-                selectNewestDropdownFixed(driver, "mat-option-" + (1900 + random.nextInt(3)));
+                selectDropdownSimple(driver, findNewestSelectId(driver), "mat-option-" + (1900 + random.nextInt(3)));
 
                 // Communication Value
                 System.out.println("  - Filling communication value");
                 String email = "test" + System.currentTimeMillis() + "@example.com";
-                fillInputFixed(driver, findNewestInput(driver, 0), email);
+                fillInputFixed(driver, findNewestTextInput(driver), email);
             }
 
             // === ADDRESS - COMPLETELY FIXED ===
@@ -314,64 +354,97 @@ public class FormFiller {
             if (clickButtonRobust(driver, "Add Address")) {
                 Thread.sleep(4000);
 
-                // Address Type
+                List<String> addressSelects = findAllSelectIds(driver);
+                List<String> addressInputs = findAllTextInputs(driver);
+
+                // Address Type (first new dropdown)
                 System.out.println("  - Selecting address type");
-                selectNewestDropdownFixed(driver, "mat-option-" + (1910 + random.nextInt(4)));
+                if (addressSelects.size() >= 2) {
+                    selectDropdownSimple(driver, addressSelects.get(addressSelects.size() - 2), "mat-option-" + (1910 + random.nextInt(4)));
+                }
 
-                // Street
+                // Street (first new input)
                 System.out.println("  - Filling street");
-                fillInputFixed(driver, findNewestInput(driver, 0), "123 Test Street");
+                if (addressInputs.size() >= 3) {
+                    fillInputFixed(driver, addressInputs.get(addressInputs.size() - 3), "123 Test Street");
+                }
 
-                // City
+                // City (second new input)
                 System.out.println("  - Filling city");
-                fillInputFixed(driver, findNewestInput(driver, 1), "Washington");
+                if (addressInputs.size() >= 2) {
+                    fillInputFixed(driver, addressInputs.get(addressInputs.size() - 2), "Washington");
+                }
 
-                // State/Province
+                // State/Province (second new dropdown)
                 System.out.println("  - Selecting state");
-                selectNewestDropdownFixed(driver, "mat-option-1915"); // DC
+                if (addressSelects.size() >= 1) {
+                    selectDropdownSimple(driver, addressSelects.get(addressSelects.size() - 1), "mat-option-1915"); // DC
+                }
 
-                // Country
+                // Country (third new dropdown - appears after state)
+                Thread.sleep(2000);
+                List<String> updatedSelects = findAllSelectIds(driver);
                 System.out.println("  - Selecting country (USA)");
-                selectSecondNewestDropdownFixed(driver, "mat-option-1260");
+                if (updatedSelects.size() > addressSelects.size()) {
+                    selectDropdownSimple(driver, updatedSelects.get(updatedSelects.size() - 1), "mat-option-1260");
+                }
 
-                // Postal Code
+                // Postal Code (third new input)
                 System.out.println("  - Filling postal code");
-                fillInputFixed(driver, findNewestInput(driver, 2), "20001");
+                if (addressInputs.size() >= 1) {
+                    fillInputFixed(driver, addressInputs.get(addressInputs.size() - 1), "20001");
+                }
             }
 
-            // === FINANCIAL ACCOUNT - COMPLETELY FIXED ===
+            // === FINANCIAL ACCOUNT - COMPLETELY FIXED ORDER ===
             System.out.println("\n26. Adding Financial Account");
             if (clickButtonRobust(driver, "Add Financial Account")) {
                 Thread.sleep(4000);
 
-                // Institution
+                List<String> finInputs = findAllTextInputs(driver);
+                List<String> finDateInputs = findAllDateInputs(driver);
+
+                // Institution (first new input)
                 System.out.println("  - Filling institution");
-                fillInputFixed(driver, findNewestInput(driver, 0), "Test Bank");
+                if (finInputs.size() >= 6) {
+                    fillInputFixed(driver, finInputs.get(finInputs.size() - 6), "Test Bank");
+                }
 
-                // Branch
+                // Branch (second new input)
                 System.out.println("  - Filling branch");
-                fillInputFixed(driver, findNewestInput(driver, 1), "Main Branch");
+                if (finInputs.size() >= 5) {
+                    fillInputFixed(driver, finInputs.get(finInputs.size() - 5), "Main Branch");
+                }
 
-                // Officer Name
+                // Officer Name (third new input)
                 System.out.println("  - Filling officer name");
-                fillInputFixed(driver, findNewestInput(driver, 2), "John Doe");
+                if (finInputs.size() >= 4) {
+                    fillInputFixed(driver, finInputs.get(finInputs.size() - 4), "John Doe");
+                }
 
-                // Account Number
+                // Account Number (fourth new input)
                 System.out.println("  - Filling account number");
-                fillInputFixed(driver, findNewestInput(driver, 3), "ACC" + (100000 + random.nextInt(900000)));
+                if (finInputs.size() >= 3) {
+                    fillInputFixed(driver, finInputs.get(finInputs.size() - 3), "ACC" + (100000 + random.nextInt(900000)));
+                }
 
-                // Account Type
+                // Account Type (fifth new input)
                 System.out.println("  - Filling account type");
-                fillInputFixed(driver, findNewestInput(driver, 4), "Checking");
+                if (finInputs.size() >= 2) {
+                    fillInputFixed(driver, finInputs.get(finInputs.size() - 2), "Checking");
+                }
 
-                // Financial ID
+                // Financial ID (sixth new input)
                 System.out.println("  - Filling financial ID");
-                fillInputFixed(driver, findNewestInput(driver, 5), "FIN" + (1000 + random.nextInt(9000)));
+                if (finInputs.size() >= 1) {
+                    fillInputFixed(driver, finInputs.get(finInputs.size() - 1), "FIN" + (1000 + random.nextInt(9000)));
+                }
 
-                // Date
+                // Date (newest date input)
                 System.out.println("  - Filling date");
-                String dateInputId = findDateInputByMask(driver, "00/00/0000", -1);
-                fillDateInputFixed(driver, dateInputId, generatePastDate(30, 365));
+                if (finDateInputs.size() >= 1) {
+                    fillDateInputFixed(driver, finDateInputs.get(finDateInputs.size() - 1), generatePastDate(30, 365));
+                }
             }
 
             // Final cleanup
@@ -711,7 +784,313 @@ public class FormFiller {
         }
     }
 
-    // ==================== UTILITY METHODS ====================
+    // ==================== NEW IMPROVED UTILITY METHODS ====================
+
+    /**
+     * Simple dropdown selection method - more reliable than Promise-based approach
+     */
+    private static boolean selectDropdownSimple(WebDriver driver, String selectId, String optionId) {
+        try {
+            System.out.println("🎯 Simple selection " + selectId + " → " + optionId);
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Close any open dropdowns first
+            forceCloseDropdown(driver);
+            Thread.sleep(300);
+
+            Boolean result = (Boolean) js.executeScript(
+                    "var select = document.getElementById('" + selectId + "');" +
+                            "if (!select) return false;" +
+                            "select.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "var trigger = select.querySelector('.mat-select-trigger');" +
+                            "if (trigger) { trigger.click(); } else { select.click(); }" +
+                            "return true;"
+            );
+
+            if (result != null && result) {
+                Thread.sleep(1500); // Wait for options to appear
+
+                Boolean optionResult = (Boolean) js.executeScript(
+                        "var option = document.getElementById('" + optionId + "');" +
+                                "if (option && option.offsetParent !== null) {" +
+                                "  option.click();" +
+                                "  setTimeout(() => document.body.click(), 300);" +
+                                "  return true;" +
+                                "}" +
+                                "return false;"
+                );
+
+                if (optionResult != null && optionResult) {
+                    System.out.println("✅ Simple selected " + selectId + " → " + optionId);
+                    Thread.sleep(500);
+                    return true;
+                }
+            }
+
+            System.out.println("❌ Simple selection failed " + selectId);
+            return false;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error in simple selection: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Fill weight field specifically
+     */
+    private static boolean fillWeightField(WebDriver driver, String weight) {
+        try {
+            System.out.println("Filling weight field with: " + weight);
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            Boolean result = (Boolean) js.executeScript(
+                    "var weightInput = document.querySelector('input[mask=\"0*\"][maxlength=\"4\"]');" +
+                            "if (weightInput) {" +
+                            "  weightInput.focus();" +
+                            "  weightInput.value = '" + weight + "';" +
+                            "  weightInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  weightInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  weightInput.blur();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;"
+            );
+
+            if (result != null && result) {
+                System.out.println("✅ Filled weight field");
+                return true;
+            } else {
+                System.out.println("❌ Failed to fill weight field");
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error filling weight field: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Find newest select element ID
+     */
+    private static String findNewestSelectId(WebDriver driver) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            String selectId = (String) js.executeScript(
+                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "if (selects.length > 0) {" +
+                            "  var newest = selects[selects.length - 1];" +
+                            "  if (!newest.id) {" +
+                            "    newest.id = 'auto-select-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);" +
+                            "  }" +
+                            "  return newest.id;" +
+                            "}" +
+                            "return null;"
+            );
+            return selectId;
+        } catch (Exception e) {
+            System.err.println("Error finding newest select: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Find name inputs in order (Last, First, Middle)
+     */
+    @SuppressWarnings("unchecked")
+    private static List<String> findNameInputs(WebDriver driver) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            List<String> inputIds = (List<String>) js.executeScript(
+                    "var nameSection = document.querySelector('.panel-heading:contains(\"Names\")')?.closest('.panel');" +
+                            "if (!nameSection) return [];" +
+                            "var inputs = Array.from(nameSection.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled])'));" +
+                            "var ids = [];" +
+                            "inputs.forEach((input, index) => {" +
+                            "  if (!input.id) {" +
+                            "    input.id = 'auto-name-' + Date.now() + '-' + index;" +
+                            "  }" +
+                            "  ids.push(input.id);" +
+                            "});" +
+                            "return ids;"
+            );
+            return inputIds != null ? inputIds : new java.util.ArrayList<>();
+        } catch (Exception e) {
+            System.err.println("Error finding name inputs: " + e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    /**
+     * Find newest date input
+     */
+    private static String findNewestDateInput(WebDriver driver) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            String inputId = (String) js.executeScript(
+                    "var inputs = Array.from(document.querySelectorAll('input[mask=\"00/00/0000\"]'));" +
+                            "var visibleInputs = inputs.filter(i => i.offsetWidth > 0 && i.offsetHeight > 0);" +
+                            "if (visibleInputs.length > 0) {" +
+                            "  var newest = visibleInputs[visibleInputs.length - 1];" +
+                            "  if (!newest.id) {" +
+                            "    newest.id = 'auto-date-newest-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);" +
+                            "  }" +
+                            "  return newest.id;" +
+                            "}" +
+                            "return null;"
+            );
+            return inputId;
+        } catch (Exception e) {
+            System.err.println("Error finding newest date input: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Find all select element IDs
+     */
+    @SuppressWarnings("unchecked")
+    private static List<String> findAllSelectIds(WebDriver driver) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            List<String> selectIds = (List<String>) js.executeScript(
+                    "var selects = Array.from(document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])'));" +
+                            "var ids = [];" +
+                            "selects.forEach((select, index) => {" +
+                            "  if (!select.id) {" +
+                            "    select.id = 'auto-select-all-' + Date.now() + '-' + index;" +
+                            "  }" +
+                            "  ids.push(select.id);" +
+                            "});" +
+                            "return ids;"
+            );
+            return selectIds != null ? selectIds : new java.util.ArrayList<>();
+        } catch (Exception e) {
+            System.err.println("Error finding all selects: " + e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    /**
+     * Find all text input IDs
+     */
+    @SuppressWarnings("unchecked")
+    private static List<String> findAllTextInputs(WebDriver driver) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            List<String> inputIds = (List<String>) js.executeScript(
+                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
+                            "var visibleInputs = inputs.filter(i => i.offsetWidth > 0 && i.offsetHeight > 0);" +
+                            "var ids = [];" +
+                            "visibleInputs.forEach((input, index) => {" +
+                            "  if (!input.id) {" +
+                            "    input.id = 'auto-text-all-' + Date.now() + '-' + index;" +
+                            "  }" +
+                            "  ids.push(input.id);" +
+                            "});" +
+                            "return ids;"
+            );
+            return inputIds != null ? inputIds : new java.util.ArrayList<>();
+        } catch (Exception e) {
+            System.err.println("Error finding all text inputs: " + e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    /**
+     * Find all date input IDs
+     */
+    @SuppressWarnings("unchecked")
+    private static List<String> findAllDateInputs(WebDriver driver) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            List<String> inputIds = (List<String>) js.executeScript(
+                    "var inputs = Array.from(document.querySelectorAll('input[mask=\"00/00/0000\"]'));" +
+                            "var visibleInputs = inputs.filter(i => i.offsetWidth > 0 && i.offsetHeight > 0);" +
+                            "var ids = [];" +
+                            "visibleInputs.forEach((input, index) => {" +
+                            "  if (!input.id) {" +
+                            "    input.id = 'auto-date-all-' + Date.now() + '-' + index;" +
+                            "  }" +
+                            "  ids.push(input.id);" +
+                            "});" +
+                            "return ids;"
+            );
+            return inputIds != null ? inputIds : new java.util.ArrayList<>();
+        } catch (Exception e) {
+            System.err.println("Error finding all date inputs: " + e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    /**
+     * Find newest text input
+     */
+    private static String findNewestTextInput(WebDriver driver) {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            String inputId = (String) js.executeScript(
+                    "var inputs = Array.from(document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask])'));" +
+                            "var visibleInputs = inputs.filter(i => i.offsetWidth > 0 && i.offsetHeight > 0);" +
+                            "if (visibleInputs.length > 0) {" +
+                            "  var newest = visibleInputs[visibleInputs.length - 1];" +
+                            "  if (!newest.id) {" +
+                            "    newest.id = 'auto-text-newest-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);" +
+                            "  }" +
+                            "  return newest.id;" +
+                            "}" +
+                            "return null;"
+            );
+            return inputId;
+        } catch (Exception e) {
+            System.err.println("Error finding newest text input: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Flexible button clicking for partial text matches
+     */
+    private static boolean clickButtonFlexible(WebDriver driver, String... textParts) {
+        try {
+            System.out.println("Attempting flexible click for parts: " + String.join(", ", textParts));
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Remove overlays first
+            js.executeScript(
+                    "var overlays = document.querySelectorAll('.cdk-overlay-backdrop, .mat-dialog-container, .cdk-overlay-pane');" +
+                            "for (var i = 0; i < overlays.length; i++) {" +
+                            "  if (overlays[i].style.display !== 'none') {" +
+                            "    overlays[i].remove();" +
+                            "  }" +
+                            "}" +
+                            "if (document.activeElement) document.activeElement.blur();"
+            );
+            Thread.sleep(500);
+
+            // Build flexible xpath for multiple text parts
+            StringBuilder xpathBuilder = new StringBuilder();
+            for (int i = 0; i < textParts.length; i++) {
+                if (i > 0) xpathBuilder.append(" and ");
+                xpathBuilder.append("contains(normalize-space(.), '").append(textParts[i]).append("')");
+            }
+
+            String xpath = "//button[" + xpathBuilder.toString() + "] | //a[" + xpathBuilder.toString() + "]";
+
+            WebDriverWait wait = new WebDriverWait(driver, DEFAULT_WAIT_TIME);
+            WebElement targetButton = wait.until(ExpectedConditions.elementToBeClickable(By.xpath(xpath)));
+
+            js.executeScript("arguments[0].click();", targetButton);
+            Thread.sleep(1000);
+            System.out.println("✅ Clicked flexible button: " + String.join(" ", textParts));
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error clicking flexible button '" + String.join(" ", textParts) + "': " + e.getMessage());
+            return false;
+        }
+    }
 
     /**
      * Find newest input by position
