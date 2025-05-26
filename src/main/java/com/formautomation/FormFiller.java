@@ -710,8 +710,9 @@ public class FormFiller {
         }
     }
      */
+
     /**
-     * FIXED: Fill A# (Alien Number) - Simplified targeting based on Phone Number example
+     * FIXED: Fill A# (Alien Number) - Hardcoded direct targeting by ID as requested
      */
     private static boolean fillAlienNumberFixed(WebDriver driver, String aNumber) {
         try {
@@ -719,31 +720,17 @@ public class FormFiller {
             JavascriptExecutor js = (JavascriptExecutor) driver;
 
             Boolean result = (Boolean) js.executeScript(
-                    "var labels = document.querySelectorAll('mat-label');" +
-                            "var aNumberLabel = null;" +
-                            "for (var i = 0; i < labels.length; i++) {" +
-                            "  var labelText = labels[i].textContent.trim();" +
-                            "  if (labelText.includes('A #')) {" + // Focusing on 'A #' as per provided HTML
-                            "    aNumberLabel = labels[i];" +
-                            "    break;" +
-                            "  }" +
+                    "var input = document.getElementById('mat-input-21');" + // Directly target by ID from the provided HTML
+                            "if (!input) {" +
+                            "  console.error('A# input with ID mat-input-21 not found.');" +
+                            "  return false;" +
                             "}" +
-                            "if (!aNumberLabel) return false;" +
-                            "" +
-                            "var matFormField = aNumberLabel.closest('mat-form-field');" +
-                            "if (!matFormField) return false;" +
-                            "" +
-                            "var input = matFormField.querySelector('input[type=\"text\"]');" + // Assuming type="text" based on HTML
-                            "if (!input) return false;" +
-                            "" +
-                            "// Optional: Add a check for maxlength=9 if desired for extra specificity, but it might overcomplicate if not strictly needed." +
-                            "// if (input.getAttribute('maxlength') !== '9') return false;" +
                             "" +
                             "input.focus();" +
                             "input.value = '" + aNumber + "';" +
                             "input.dispatchEvent(new Event('input', {bubbles: true}));" +
                             "input.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "input.blur();" +
+                            "input.blur();;" +
                             "return true;"
             );
 
@@ -759,6 +746,7 @@ public class FormFiller {
             return false;
         }
     }
+
     /**
      * FIXED: Fill passport fields using label targeting and random dropdown selection.
      * This method identifies fields by their <mat-label> and selects a random,
