@@ -10,8 +10,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 import java.util.List;
 import java.util.Random;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * FIXED FormFiller - Back to working version with only specific fixes
@@ -208,37 +206,30 @@ public class FormFiller {
                 selectDropdownSimple(driver, findNewestSelectId(driver), "mat-option-1260"); // USA
             }
 
-            // === PASSPORT - FIXED ===
+            // === PASSPORT - WORKING ===
             System.out.println("\n18. Adding Passport");
             if (clickButtonRobust(driver, "Add Passport")) {
                 Thread.sleep(4000);
 
-                // This logic for finding elements was working, so we keep it.
                 List<String> passportSelects = findAllSelectIds(driver);
                 List<String> passportInputs = findAllTextInputs(driver);
                 List<String> passportDateInputs = findAllDateInputs(driver);
 
-                // FIXED: Select a random passport type instead of a hardcoded one.
-                System.out.println("  - Selecting random passport type");
+                System.out.println("  - Selecting passport type (P - Regular)");
                 if (passportSelects.size() > 0) {
-                    // We target the second to last select element, as in your original code.
-                    selectRandomOptionForDropdown(driver, passportSelects.get(passportSelects.size() - 2));
+                    selectDropdownSimple(driver, passportSelects.get(passportSelects.size() - 2), "mat-option-1518");
                 }
 
-                // UNCHANGED: Your working logic for filling the passport number.
                 System.out.println("  - Filling passport number");
                 if (passportInputs.size() > 0) {
                     fillInputFixed(driver, passportInputs.get(passportInputs.size() - 1), data.getPassportNumber());
                 }
 
-                // FIXED: Select a random passport country instead of a hardcoded one.
-                System.out.println("  - Selecting random passport country");
+                System.out.println("  - Selecting passport country (USA)");
                 if (passportSelects.size() > 1) {
-                    // We target the last select element, as in your original code.
-                    selectRandomOptionForDropdown(driver, passportSelects.get(passportSelects.size() - 1));
+                    selectDropdownSimple(driver, passportSelects.get(passportSelects.size() - 1), "mat-option-1520");
                 }
 
-                // UNCHANGED: Your working logic for the dates.
                 System.out.println("  - Filling passport issue date");
                 if (passportDateInputs.size() > 1) {
                     fillDateInputFixed(driver, passportDateInputs.get(passportDateInputs.size() - 2), data.getPassportIssueDate());
@@ -250,17 +241,12 @@ public class FormFiller {
                 }
             }
 
-
             // === A NUMBER - WORKING ===
             System.out.println("\n19. Adding A#");
             if (clickButtonRobust(driver, "Add A#")) {
                 Thread.sleep(3000);
-                // Directly call the enhanced fillAlienNumberFixed method
-                if (fillAlienNumberFixed(driver, data.getaNumber())) {
-                    System.out.println("A# successfully added.");
-                } else {
-                    System.out.println("Failed to add A#.");
-                }
+                String aInputId = findNewestTextInput(driver);
+                fillInputFixed(driver, aInputId, data.getaNumber());
             }
 
             // === DRIVER'S LICENSE - WORKING ===
@@ -583,7 +569,7 @@ public class FormFiller {
 
     /**
      * FIXED: Fill phone fields using label targeting
-
+     */
     private static boolean fillPhoneFieldsFixed(WebDriver driver) {
         try {
             System.out.println("Filling phone fields");
@@ -709,483 +695,7 @@ public class FormFiller {
             return false;
         }
     }
-     */
-    /**
-     * FIXED: Fill A# (Alien Number) - Enhanced targeting with specific HTML in mind
-     */
-    private static boolean fillAlienNumberFixed(WebDriver driver, String aNumber) {
-        try {
-            System.out.println("FIXED: Filling A# (Alien Number) with: " + aNumber);
-            JavascriptExecutor js = (JavascriptExecutor) driver;
 
-            Boolean result = (Boolean) js.executeScript(
-                    "// Try multiple approaches to find A# input" +
-                            "var aInput = null;" +
-
-                            "// Method 1: Find by A# label (most robust given the HTML provided)" +
-                            "var labels = document.querySelectorAll('mat-label, label');" +
-                            "for (var i = 0; i < labels.length; i++) {" +
-                            "  var labelText = labels[i].textContent.trim();" +
-                            "  if (labelText.includes('A #') || labelText.includes('A-Number') || labelText.includes('Alien Number')) {" +
-                            "    var formField = labels[i].closest('mat-form-field') || labels[i].closest('.mat-form-field');" +
-                            "    if (formField) {" +
-                            "      aInput = formField.querySelector('input[type=\"text\"], input[type=\"number\"]');" +
-                            "      // If found, ensure it has maxlength=9 to be more specific" +
-                            "      if (aInput && aInput.getAttribute('maxlength') === '9') {" +
-                            "        break;" +
-                            "      } else {" +
-                            "        aInput = null; // Reset if not matching maxlength" +
-                            "      }" +
-                            "    }" +
-                            "  }" +
-                            "}" +
-
-                            "// Method 2: Find by autocomplete='off' and maxlength='9' as a strong fallback" +
-                            "if (!aInput) {" +
-                            "  var inputs2 = document.querySelectorAll('input[autocomplete=\"off\"][maxlength=\"9\"]');" +
-                            "  if (inputs2.length > 0) {" +
-                            "    aInput = inputs2[inputs2.length - 1];" +
-                            "  }" +
-                            "}" +
-
-                            "// Method 3: Find by aria-label or id containing 'A-Number' or 'Alien' (less reliable if dynamic IDs)" +
-                            "if (!aInput) {" +
-                            "  var inputs0 = document.querySelectorAll('input[aria-label*=\"A-Number\"], input[aria-label*=\"Alien\"], input[id*=\"A-Number\"], input[id*=\"Alien\"]');" +
-                            "  if (inputs0.length > 0) {" +
-                            "    aInput = inputs0[inputs0.length - 1];" +
-                            "  }" +
-                            "}" +
-
-                            "// Method 4: Find inputs with maxlength 9 and associated with labels that contain 'A#' or 'Alien'" +
-                            "if (!aInput) {" +
-                            "  var inputs3 = document.querySelectorAll('input[maxlength=\"9\"]');" +
-                            "  for (var i = 0; i < inputs3.length; i++) {" +
-                            "    var inputId = inputs3[i].id;" +
-                            "    if (inputId) {" +
-                            "      var associatedLabel = document.querySelector('label[for=\"' + inputId + '\"]');" +
-                            "      if (associatedLabel && (associatedLabel.textContent.includes('A #') || associatedLabel.textContent.includes('A-Number') || associatedLabel.textContent.includes('Alien'))) {" +
-                            "        aInput = inputs3[i];" +
-                            "        break;" +
-                            "      }" +
-                            "    }" +
-                            "    var parentLabel = inputs3[i].closest('mat-form-field') ? inputs3[i].closest('mat-form-field').querySelector('mat-label, label') : null;" +
-                            "    if (parentLabel && (parentLabel.textContent.includes('A #') || parentLabel.textContent.includes('A-Number') || parentLabel.textContent.includes('Alien'))) {" +
-                            "        aInput = inputs3[i];" +
-                            "        break;" +
-                            "    }" +
-                            "  }" +
-                            "}" +
-
-                            "if (aInput) {" +
-                            "  aInput.focus();" +
-                            "  aInput.value = '" + aNumber + "';" +
-                            "  aInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  aInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  aInput.blur();" +
-                            "  return true;" +
-                            "}" +
-                            "return false;"
-            );
-
-            if (result != null && result) {
-                System.out.println("✅ FIXED: A# filled successfully");
-                return true;
-            } else {
-                System.out.println("❌ FIXED: Failed to fill A#");
-                return false;
-            }
-        } catch (Exception e) {
-            System.err.println("❌ FIXED: Error filling A#: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * FIXED: Fill passport fields using label targeting and random dropdown selection.
-     * This method identifies fields by their <mat-label> and selects a random,
-     * valid option for dropdowns like 'Type' and 'Issuing Country' instead of relying on fixed IDs.
-     */
-    private static boolean fillPassportFieldsFixed(WebDriver driver, PersonData data) {
-        try {
-            System.out.println("FIXED: Filling passport fields using label ID and random selection.");
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-
-            // Helper function to fill a text/date field by its label
-            BiFunction<String, String, Boolean> fillInputByLabel = (label, value) -> {
-                System.out.println("  - Filling '" + label + "' with value...");
-                try {
-                    return (Boolean) js.executeScript(
-                            "var labels = Array.from(document.querySelectorAll('mat-label'));" +
-                                    "var targetLabels = labels.filter(l => l.textContent.trim().includes(arguments[0]) && l.offsetParent !== null);" +
-                                    "if (targetLabels.length === 0) return false;" +
-                                    "var targetLabel = targetLabels[targetLabels.length - 1];" +
-                                    "var formField = targetLabel.closest('mat-form-field');" +
-                                    "if (!formField) return false;" +
-                                    "var input = formField.querySelector('input');" +
-                                    "if (!input) return false;" +
-                                    "input.focus(); input.value = arguments[1];" +
-                                    "input.dispatchEvent(new Event('input', { bubbles: true }));" +
-                                    "input.dispatchEvent(new Event('change', { bubbles: true }));" +
-                                    "input.blur(); return true;", label, value
-                    );
-                } catch (Exception e) { return false; }
-            };
-
-            // Helper function to select a random option from a dropdown by its label
-            Function<String, Boolean> selectRandomOptionByLabel = (label) -> {
-                System.out.println("  - Selecting random option for '" + label + "'");
-                try {
-                    forceCloseDropdown(driver);
-                    Thread.sleep(500);
-                    return (Boolean) js.executeScript(
-                            "return new Promise((resolve) => {" +
-                                    "  var labels = Array.from(document.querySelectorAll('mat-label'));" +
-                                    "  var targetLabels = labels.filter(l => l.textContent.trim().includes(arguments[0]) && l.offsetParent !== null);" +
-                                    "  if (targetLabels.length === 0) { resolve(false); return; }" +
-                                    "  var targetLabel = targetLabels[targetLabels.length - 1];" +
-                                    "  var formField = targetLabel.closest('mat-form-field');" +
-                                    "  if (!formField) { resolve(false); return; }" +
-                                    "  var select = formField.querySelector('mat-select');" +
-                                    "  if (!select) { resolve(false); return; }" +
-                                    "  select.click();" +
-                                    "  setTimeout(() => {" +
-                                    "    var options = Array.from(document.querySelectorAll('mat-option:not(.mat-option-disabled)'));" +
-                                    "    var visibleOptions = options.filter(o => o.offsetParent !== null && o.textContent.trim() !== '');" +
-                                    "    if (visibleOptions.length > 1) {" +
-                                    "      var randomIndex = 1 + Math.floor(Math.random() * (visibleOptions.length - 1));" +
-                                    "      visibleOptions[randomIndex].click();" +
-                                    "    } else if (visibleOptions.length === 1) { visibleOptions[0].click(); }" +
-                                    "    else { resolve(false); return; }" +
-                                    "    setTimeout(() => { document.body.click(); resolve(true); }, 500);" +
-                                    "  }, 2500);" +
-                                    "});", label
-                    );
-                } catch (Exception e) { return false; }
-            };
-
-            // Execute the steps
-            if (!selectRandomOptionByLabel.apply("Type")) return false;
-            Thread.sleep(2000);
-
-            if (!fillInputByLabel.apply("Passport Number", data.getPassportNumber())) return false;
-            Thread.sleep(1000);
-
-            if (!selectRandomOptionByLabel.apply("Issuing Country")) return false;
-            Thread.sleep(3000);
-
-            if (!fillInputByLabel.apply("Issue Date", data.getPassportIssueDate())) return false;
-            Thread.sleep(1000);
-
-            if (!fillInputByLabel.apply("Expiry Date", data.getPassportExpiryDate())) return false;
-            Thread.sleep(1000);
-
-            System.out.println("✅ Passport fields filled successfully using labels and random selection.");
-            return true;
-
-        } catch (Exception e) {
-            System.err.println("❌ Error in new passport filling method: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * FIXED: Fill phone fields with enhanced selection logic
-     */
-    private static boolean fillPhoneFieldsFixed(WebDriver driver) {
-        try {
-            System.out.println("FIXED: Filling phone fields with enhanced logic");
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-
-            // Step 1: Select phone type - FIXED with better targeting
-            System.out.println("  - FIXED: Selecting phone type");
-            Boolean typeResult = (Boolean) js.executeScript(
-                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
-                            "if (selects.length < 2) return false;" +
-                            "var phoneTypeSelect = selects[selects.length - 2];" +
-                            "var trigger = phoneTypeSelect.querySelector('.mat-select-trigger');" +
-                            "if (!trigger) return false;" +
-                            "phoneTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "trigger.click();" +
-                            "setTimeout(() => {" +
-                            "  var options = document.querySelectorAll('mat-option');" +
-                            "  var validOptions = [];" +
-                            "  for (var i = 0; i < options.length; i++) {" +
-                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled') && options[i].textContent.trim().length > 0) {" +
-                            "      validOptions.push(options[i]);" +
-                            "    }" +
-                            "  }" +
-                            "  if (validOptions.length > 0) {" +
-                            "    var selectedOption = validOptions[0];" +
-                            "    selectedOption.click();" +
-                            "    setTimeout(() => document.body.click(), 500);" +
-                            "  }" +
-                            "}, 2000);" +
-                            "return true;"
-            );
-
-            Thread.sleep(4000);
-
-            // Step 2: Select phone country - FIXED with better targeting
-            System.out.println("  - FIXED: Selecting phone country");
-            Boolean countryResult = (Boolean) js.executeScript(
-                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
-                            "if (selects.length === 0) return false;" +
-                            "var phoneCountrySelect = selects[selects.length - 1];" +
-                            "var trigger = phoneCountrySelect.querySelector('.mat-select-trigger');" +
-                            "if (!trigger) return false;" +
-                            "phoneCountrySelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "trigger.click();" +
-                            "setTimeout(() => {" +
-                            "  var options = document.querySelectorAll('mat-option');" +
-                            "  var validOptions = [];" +
-                            "  for (var i = 0; i < options.length; i++) {" +
-                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled') && options[i].textContent.trim().length > 0) {" +
-                            "      validOptions.push(options[i]);" +
-                            "    }" +
-                            "  }" +
-                            "  if (validOptions.length > 0) {" +
-                            "    var selectedOption = validOptions[0];" +
-                            "    selectedOption.click();" +
-                            "    setTimeout(() => document.body.click(), 500);" +
-                            "  }" +
-                            "}, 2000);" +
-                            "return true;"
-            );
-
-            Thread.sleep(4000);
-
-            // Step 3: Fill phone number - FIXED
-            System.out.println("  - Filling phone number");
-            String phoneNumber = "202" + (1000000 + random.nextInt(9000000));
-            Boolean numberResult = (Boolean) js.executeScript(
-                    "var labels = document.querySelectorAll('mat-label');" +
-                            "var phoneNumberLabel = null;" +
-                            "for (var i = 0; i < labels.length; i++) {" +
-                            "  if (labels[i].textContent.includes('Phone #')) {" +
-                            "    phoneNumberLabel = labels[i];" +
-                            "    break;" +
-                            "  }" +
-                            "}" +
-                            "if (!phoneNumberLabel) return false;" +
-                            "" +
-                            "var matFormField = phoneNumberLabel.closest('mat-form-field');" +
-                            "if (!matFormField) return false;" +
-                            "" +
-                            "var input = matFormField.querySelector('input[type=\"text\"]');" +
-                            "if (!input) return false;" +
-                            "" +
-                            "input.focus();" +
-                            "input.value = '" + phoneNumber + "';" +
-                            "input.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "input.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "input.blur();" +
-                            "return true;"
-            );
-
-            Thread.sleep(2000);
-
-            if (numberResult != null && numberResult) {
-                System.out.println("✅ FIXED: Phone fields completed");
-                return true;
-            } else {
-                System.out.println("❌ FIXED: Failed to fill phone number");
-                return false;
-            }
-
-        } catch (Exception e) {
-            System.err.println("❌ FIXED: Error filling phone fields: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * FIXED: Fill address fields with sequential approach
-
-    private static boolean fillAddressFieldsFixed(WebDriver driver) {
-        try {
-            System.out.println("FIXED: Filling address fields with proper sequencing");
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-
-            // Step 1: Select address type - FIXED
-            System.out.println("  - FIXED Step 1: Selecting address type");
-            Boolean typeResult = (Boolean) js.executeScript(
-                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
-                            "if (selects.length === 0) return false;" +
-                            "var addressTypeSelect = selects[selects.length - 1];" +
-                            "var trigger = addressTypeSelect.querySelector('.mat-select-trigger');" +
-                            "if (!trigger) return false;" +
-                            "addressTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "trigger.click();" +
-                            "setTimeout(() => {" +
-                            "  var options = document.querySelectorAll('mat-option');" +
-                            "  var validOptions = [];" +
-                            "  for (var i = 0; i < options.length; i++) {" +
-                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled') && options[i].textContent.trim().length > 0) {" +
-                            "      validOptions.push(options[i]);" +
-                            "    }" +
-                            "  }" +
-                            "  if (validOptions.length > 0) {" +
-                            "    var selectedOption = validOptions[0];" +
-                            "    selectedOption.click();" +
-                            "    setTimeout(() => document.body.click(), 500);" +
-                            "  }" +
-                            "}, 2000);" +
-                            "return true;"
-            );
-
-            Thread.sleep(4000);
-
-            // Step 2: Fill street address - FIXED
-            System.out.println("  - FIXED Step 2: Filling street address");
-            Boolean streetResult = (Boolean) js.executeScript(
-                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])');" +
-                            "var visibleInputs = [];" +
-                            "for (var i = 0; i < inputs.length; i++) {" +
-                            "  var rect = inputs[i].getBoundingClientRect();" +
-                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null && inputs[i].value === '') {" +
-                            "    visibleInputs.push(inputs[i]);" +
-                            "  }" +
-                            "}" +
-                            "if (visibleInputs.length === 0) return false;" +
-                            "var streetInput = visibleInputs[visibleInputs.length - 1];" +
-                            "streetInput.focus();" +
-                            "streetInput.value = '123 Test Street';" +
-                            "streetInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "streetInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "streetInput.blur();" +
-                            "return true;"
-            );
-
-            Thread.sleep(3000);
-
-            // Step 3: Fill city - FIXED
-            System.out.println("  - FIXED Step 3: Filling city");
-            Boolean cityResult = (Boolean) js.executeScript(
-                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])');" +
-                            "var visibleInputs = [];" +
-                            "for (var i = 0; i < inputs.length; i++) {" +
-                            "  var rect = inputs[i].getBoundingClientRect();" +
-                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null && inputs[i].value === '') {" +
-                            "    visibleInputs.push(inputs[i]);" +
-                            "  }" +
-                            "}" +
-                            "if (visibleInputs.length === 0) return false;" +
-                            "var cityInput = visibleInputs[visibleInputs.length - 1];" +
-                            "cityInput.focus();" +
-                            "cityInput.value = 'Washington';" +
-                            "cityInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "cityInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "cityInput.blur();" +
-                            "return true;"
-            );
-
-            Thread.sleep(3000);
-
-            // Step 4: Select state - FIXED
-            System.out.println("  - FIXED Step 4: Selecting state");
-            Boolean stateResult = (Boolean) js.executeScript(
-                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
-                            "if (selects.length === 0) return false;" +
-                            "var stateSelect = selects[selects.length - 1];" +
-                            "var trigger = stateSelect.querySelector('.mat-select-trigger');" +
-                            "if (!trigger) return false;" +
-                            "stateSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "trigger.click();" +
-                            "setTimeout(() => {" +
-                            "  var options = document.querySelectorAll('mat-option');" +
-                            "  var validOptions = [];" +
-                            "  for (var i = 0; i < options.length; i++) {" +
-                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled') && options[i].textContent.trim().length > 0) {" +
-                            "      validOptions.push(options[i]);" +
-                            "    }" +
-                            "  }" +
-                            "  if (validOptions.length > 0) {" +
-                            "    var selectedOption = validOptions[0];" +
-                            "    selectedOption.click();" +
-                            "    setTimeout(() => document.body.click(), 500);" +
-                            "  }" +
-                            "}, 2000);" +
-                            "return true;"
-            );
-
-            Thread.sleep(5000); // Wait longer for country dropdown to appear
-
-            // Step 5: Select country - FIXED
-            System.out.println("  - FIXED Step 5: Selecting country");
-            Boolean countryResult = (Boolean) js.executeScript(
-                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
-                            "if (selects.length === 0) return false;" +
-                            "var countrySelect = selects[selects.length - 1];" +
-                            "var trigger = countrySelect.querySelector('.mat-select-trigger');" +
-                            "if (!trigger) return false;" +
-                            "countrySelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
-                            "trigger.click();" +
-                            "setTimeout(() => {" +
-                            "  var options = document.querySelectorAll('mat-option');" +
-                            "  var validOptions = [];" +
-                            "  for (var i = 0; i < options.length; i++) {" +
-                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled') && options[i].textContent.trim().length > 0) {" +
-                            "      validOptions.push(options[i]);" +
-                            "    }" +
-                            "  }" +
-                            "  // Try to find USA or select first available" +
-                            "  var selectedOption = null;" +
-                            "  for (var j = 0; j < validOptions.length; j++) {" +
-                            "    var optText = validOptions[j].textContent.trim();" +
-                            "    if (optText.includes('USA') || optText.includes('UNITED STATES')) {" +
-                            "      selectedOption = validOptions[j];" +
-                            "      break;" +
-                            "    }" +
-                            "  }" +
-                            "  if (!selectedOption && validOptions.length > 0) {" +
-                            "    selectedOption = validOptions[0];" +
-                            "  }" +
-                            "  if (selectedOption) {" +
-                            "    selectedOption.click();" +
-                            "    setTimeout(() => document.body.click(), 500);" +
-                            "  }" +
-                            "}, 2000);" +
-                            "return true;"
-            );
-
-            Thread.sleep(4000);
-
-            // Step 6: Fill postal code - FIXED
-            System.out.println("  - FIXED Step 6: Filling postal code");
-            Boolean postalResult = (Boolean) js.executeScript(
-                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])');" +
-                            "var visibleInputs = [];" +
-                            "for (var i = 0; i < inputs.length; i++) {" +
-                            "  var rect = inputs[i].getBoundingClientRect();" +
-                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null && inputs[i].value === '') {" +
-                            "    visibleInputs.push(inputs[i]);" +
-                            "  }" +
-                            "}" +
-                            "if (visibleInputs.length === 0) return false;" +
-                            "var postalInput = visibleInputs[visibleInputs.length - 1];" +
-                            "postalInput.focus();" +
-                            "postalInput.value = '20001';" +
-                            "postalInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "postalInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "postalInput.blur();" +
-                            "return true;"
-            );
-
-            Thread.sleep(2000);
-
-            System.out.println("✅ FIXED: Address fields completed successfully");
-            return true;
-
-        } catch (Exception e) {
-            System.err.println("❌ FIXED: Error filling address fields: " + e.getMessage());
-            return false;
-        }
-    }
-
-     */
     /**
      * FIXED: Fill alternative communication fields
      */
@@ -1258,93 +768,89 @@ public class FormFiller {
     }
 
     /**
-     * FIXED: Fill address fields using a robust, label-based identification approach.
-     * This method locates input fields and dropdowns by their visible <mat-label> text,
-     * ensuring data is entered into the correct field regardless of its ID or position on the page.
+     * FIXED: Fill address fields using step-by-step approach
      */
     private static boolean fillAddressFieldsFixed(WebDriver driver) {
         try {
-            System.out.println("FIXED: Filling address fields using label identification.");
+            System.out.println("Filling address fields step by step");
+
             JavascriptExecutor js = (JavascriptExecutor) driver;
 
-            // Helper function to fill a text field based on its associated label text.
-            BiFunction<String, String, Boolean> fillInputByLabel = (label, value) -> {
-                System.out.println("  - Locating field by label '" + label + "' and filling with '" + value + "'");
-                try {
-                    return (Boolean) js.executeScript(
-                            "var labels = Array.from(document.querySelectorAll('mat-label'));" +
-                                    "var targetLabels = labels.filter(l => l.textContent.trim().includes('" + label + "') && l.offsetParent !== null);" +
-                                    "if (targetLabels.length === 0) { console.error('Label not found for: " + label + "'); return false; }" +
-                                    "var targetLabel = targetLabels[targetLabels.length - 1];" +
-                                    "var formField = targetLabel.closest('mat-form-field');" +
-                                    "if (!formField) return false;" +
-                                    "var input = formField.querySelector('input');" +
-                                    "if (!input) return false;" +
-                                    "input.focus(); input.value = arguments[1];" +
-                                    "input.dispatchEvent(new Event('input', { bubbles: true }));" +
-                                    "input.dispatchEvent(new Event('change', { bubbles: true }));" +
-                                    "input.blur(); return true;", label, value
-                    );
-                } catch (Exception e) { return false; }
-            };
+            // Step 1: Select address type
+            System.out.println("  - Step 1: Selecting address type");
+            Boolean typeResult = (Boolean) js.executeScript(
+                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
+                            "if (selects.length === 0) return false;" +
+                            "var newest = selects[selects.length - 1];" +
+                            "var trigger = newest.querySelector('.mat-select-trigger');" +
+                            "if (!trigger) return false;" +
+                            "trigger.click();" +
+                            "setTimeout(() => {" +
+                            "  var options = document.querySelectorAll('mat-option');" +
+                            "  for (var j = 0; j < options.length; j++) {" +
+                            "    if (options[j].offsetParent !== null && !options[j].classList.contains('mat-option-disabled')) {" +
+                            "      options[j].click();" +
+                            "      setTimeout(() => document.body.click(), 300);" +
+                            "      return;" +
+                            "    }" +
+                            "  }" +
+                            "}, 1500);" +
+                            "return true;"
+            );
 
-            // Helper function to select a random option from a dropdown based on its label.
-            Function<String, Boolean> selectRandomOptionByLabel = (label) -> {
-                System.out.println("  - Locating dropdown by label '" + label + "' and selecting a random option.");
-                try {
-                    forceCloseDropdown(driver);
-                    Thread.sleep(500);
-                    return (Boolean) js.executeScript(
-                            "return new Promise((resolve) => {" +
-                                    "  var labels = Array.from(document.querySelectorAll('mat-label'));" +
-                                    "  var targetLabels = labels.filter(l => l.textContent.trim().includes(arguments[0]) && l.offsetParent !== null);" +
-                                    "  if (targetLabels.length === 0) { resolve(false); return; }" +
-                                    "  var targetLabel = targetLabels[targetLabels.length - 1];" +
-                                    "  var formField = targetLabel.closest('mat-form-field');" +
-                                    "  if (!formField) { resolve(false); return; }" +
-                                    "  var select = formField.querySelector('mat-select');" +
-                                    "  if (!select) { resolve(false); return; }" +
-                                    "  select.click();" +
-                                    "  setTimeout(() => {" +
-                                    "    var options = Array.from(document.querySelectorAll('mat-option:not(.mat-option-disabled)'));" +
-                                    "    var visibleOptions = options.filter(o => o.offsetParent !== null && o.textContent.trim() !== '');" +
-                                    "    if (visibleOptions.length > 1) {" +
-                                    "      var randomIndex = 1 + Math.floor(Math.random() * (visibleOptions.length - 1));" + // Avoid first (often blank) option
-                                    "      visibleOptions[randomIndex].click();" +
-                                    "    } else if (visibleOptions.length === 1) { visibleOptions[0].click(); }" +
-                                    "    else { resolve(false); return; }" +
-                                    "    setTimeout(() => { document.body.click(); resolve(true); }, 500);" +
-                                    "  }, 2000);" +
-                                    "});", label
-                    );
-                } catch (Exception e) { return false; }
-            };
-
-            // Sequentially fill the address form
-            if (!selectRandomOptionByLabel.apply("Type:")) return false;
-            Thread.sleep(2000);
-
-            if (!fillInputByLabel.apply("Street", "123 Automation Lane")) return false;
-            Thread.sleep(1000);
-
-            if (!fillInputByLabel.apply("City", "Selenium City")) return false;
-            Thread.sleep(1000);
-
-            if (!selectRandomOptionByLabel.apply("State")) return false;
             Thread.sleep(3000);
 
-            if (!selectRandomOptionByLabel.apply("Country")) return false;
+            // Step 2: Fill street
+            System.out.println("  - Step 2: Filling street");
+            Boolean streetResult = (Boolean) js.executeScript(
+                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])');" +
+                            "var visibleInputs = [];" +
+                            "for (var i = 0; i < inputs.length; i++) {" +
+                            "  var rect = inputs[i].getBoundingClientRect();" +
+                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null) {" +
+                            "    visibleInputs.push(inputs[i]);" +
+                            "  }" +
+                            "}" +
+                            "if (visibleInputs.length === 0) return false;" +
+                            "var streetInput = visibleInputs[visibleInputs.length - 1];" +
+                            "streetInput.focus();" +
+                            "streetInput.value = '123 Test Street';" +
+                            "streetInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "streetInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "streetInput.blur();" +
+                            "return true;"
+            );
+
             Thread.sleep(2000);
 
-            if (!fillInputByLabel.apply("Postal", "90210")) return false;
-            Thread.sleep(1000);
+            // Continue with remaining address fields...
+            System.out.println("  - Step 3: Filling city");
+            js.executeScript(
+                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])');" +
+                            "var visibleInputs = [];" +
+                            "for (var i = 0; i < inputs.length; i++) {" +
+                            "  var rect = inputs[i].getBoundingClientRect();" +
+                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null) {" +
+                            "    visibleInputs.push(inputs[i]);" +
+                            "  }" +
+                            "}" +
+                            "if (visibleInputs.length > 1) {" +
+                            "  var cityInput = visibleInputs[visibleInputs.length - 1];" +
+                            "  cityInput.focus();" +
+                            "  cityInput.value = 'Washington';" +
+                            "  cityInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  cityInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  cityInput.blur();" +
+                            "}"
+            );
 
-            System.out.println("✅ Address fields filled successfully using labels.");
+            Thread.sleep(2000);
+
+            System.out.println("✅ Address fields filled");
             return true;
 
         } catch (Exception e) {
-            System.err.println("❌ Error in robust address filling method: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("❌ Error filling address fields: " + e.getMessage());
             return false;
         }
     }
@@ -1583,68 +1089,6 @@ public class FormFiller {
         } catch (Exception e) {
             System.err.println("Error finding newest select: " + e.getMessage());
             return null;
-        }
-    }
-
-    /**
-     * Selects a random, visible, and enabled option from a dropdown panel
-     * after it has been opened.
-     * @param driver The WebDriver instance.
-     * @param selectId The ID of the mat-select element to click and open.
-     * @return true if an option was successfully selected, false otherwise.
-     */
-    private static boolean selectRandomOptionForDropdown(WebDriver driver, String selectId) {
-        try {
-            System.out.println("🎯 Selecting random option for dropdown ID: " + selectId);
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            forceCloseDropdown(driver); // Ensure no other dropdowns are open
-            Thread.sleep(500);
-
-            // Step 1: Click the dropdown to open its options panel.
-            Boolean clicked = (Boolean) js.executeScript(
-                    "var select = document.getElementById(arguments[0]);" +
-                            "if (!select) { console.error('Dropdown not found:', arguments[0]); return false; }" +
-                            "var trigger = select.querySelector('.mat-select-trigger');" +
-                            "if (trigger) { trigger.click(); } else { select.click(); }" +
-                            "return true;", selectId
-            );
-
-            if (clicked == null || !clicked) {
-                System.out.println("❌ Failed to click dropdown to open panel: " + selectId);
-                return false;
-            }
-
-            // Wait for the options panel to animate and render.
-            Thread.sleep(2000);
-
-            // Step 2: Find all visible options and click a random one.
-            Boolean selected = (Boolean) js.executeScript(
-                    "var options = Array.from(document.querySelectorAll('mat-option:not(.mat-option-disabled)'));" +
-                            "var visibleOptions = options.filter(o => o.offsetParent !== null && o.textContent.trim() !== '');" +
-                            "if (visibleOptions.length > 0) {" +
-                            "  var randomIndex = Math.floor(Math.random() * visibleOptions.length);" +
-                            "  console.log('Randomly selecting option: ' + visibleOptions[randomIndex].textContent);" +
-                            "  visibleOptions[randomIndex].click();" +
-                            "  setTimeout(() => document.body.click(), 500);" + // Click away to close the panel
-                            "  return true;" +
-                            "} else {" +
-                            "  console.error('No visible options found for dropdown:', arguments[0]);" +
-                            "  return false;" +
-                            "}", selectId
-            );
-
-            if (selected != null && selected) {
-                System.out.println("✅ Randomly selected an option for: " + selectId);
-                Thread.sleep(1000);
-                return true;
-            }
-
-            System.out.println("❌ Could not find and select a random option for dropdown: " + selectId);
-            return false;
-
-        } catch (Exception e) {
-            System.err.println("❌ EXCEPTION during random dropdown selection: " + e.getMessage());
-            return false;
         }
     }
 
