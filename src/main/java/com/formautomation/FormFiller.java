@@ -711,7 +711,7 @@ public class FormFiller {
     }
      */
     /**
-     * FIXED: Fill A# (Alien Number) - Enhanced targeting with specific HTML in mind
+     * FIXED: Fill A# (Alien Number) - Simplified targeting based on Phone Number example
      */
     private static boolean fillAlienNumberFixed(WebDriver driver, String aNumber) {
         try {
@@ -719,72 +719,32 @@ public class FormFiller {
             JavascriptExecutor js = (JavascriptExecutor) driver;
 
             Boolean result = (Boolean) js.executeScript(
-                    "// Try multiple approaches to find A# input" +
-                            "var aInput = null;" +
-
-                            "// Method 1: Find by A# label (most robust given the HTML provided)" +
-                            "var labels = document.querySelectorAll('mat-label, label');" +
+                    "var labels = document.querySelectorAll('mat-label');" +
+                            "var aNumberLabel = null;" +
                             "for (var i = 0; i < labels.length; i++) {" +
                             "  var labelText = labels[i].textContent.trim();" +
-                            "  if (labelText.includes('A #') || labelText.includes('A-Number') || labelText.includes('Alien Number')) {" +
-                            "    var formField = labels[i].closest('mat-form-field') || labels[i].closest('.mat-form-field');" +
-                            "    if (formField) {" +
-                            "      aInput = formField.querySelector('input[type=\"text\"], input[type=\"number\"]');" +
-                            "      // If found, ensure it has maxlength=9 to be more specific" +
-                            "      if (aInput && aInput.getAttribute('maxlength') === '9') {" +
-                            "        break;" +
-                            "      } else {" +
-                            "        aInput = null; // Reset if not matching maxlength" +
-                            "      }" +
-                            "    }" +
+                            "  if (labelText.includes('A #')) {" + // Focusing on 'A #' as per provided HTML
+                            "    aNumberLabel = labels[i];" +
+                            "    break;" +
                             "  }" +
                             "}" +
-
-                            "// Method 2: Find by autocomplete='off' and maxlength='9' as a strong fallback" +
-                            "if (!aInput) {" +
-                            "  var inputs2 = document.querySelectorAll('input[autocomplete=\"off\"][maxlength=\"9\"]');" +
-                            "  if (inputs2.length > 0) {" +
-                            "    aInput = inputs2[inputs2.length - 1];" +
-                            "  }" +
-                            "}" +
-
-                            "// Method 3: Find by aria-label or id containing 'A-Number' or 'Alien' (less reliable if dynamic IDs)" +
-                            "if (!aInput) {" +
-                            "  var inputs0 = document.querySelectorAll('input[aria-label*=\"A-Number\"], input[aria-label*=\"Alien\"], input[id*=\"A-Number\"], input[id*=\"Alien\"]');" +
-                            "  if (inputs0.length > 0) {" +
-                            "    aInput = inputs0[inputs0.length - 1];" +
-                            "  }" +
-                            "}" +
-
-                            "// Method 4: Find inputs with maxlength 9 and associated with labels that contain 'A#' or 'Alien'" +
-                            "if (!aInput) {" +
-                            "  var inputs3 = document.querySelectorAll('input[maxlength=\"9\"]');" +
-                            "  for (var i = 0; i < inputs3.length; i++) {" +
-                            "    var inputId = inputs3[i].id;" +
-                            "    if (inputId) {" +
-                            "      var associatedLabel = document.querySelector('label[for=\"' + inputId + '\"]');" +
-                            "      if (associatedLabel && (associatedLabel.textContent.includes('A #') || associatedLabel.textContent.includes('A-Number') || associatedLabel.textContent.includes('Alien'))) {" +
-                            "        aInput = inputs3[i];" +
-                            "        break;" +
-                            "      }" +
-                            "    }" +
-                            "    var parentLabel = inputs3[i].closest('mat-form-field') ? inputs3[i].closest('mat-form-field').querySelector('mat-label, label') : null;" +
-                            "    if (parentLabel && (parentLabel.textContent.includes('A #') || parentLabel.textContent.includes('A-Number') || parentLabel.textContent.includes('Alien'))) {" +
-                            "        aInput = inputs3[i];" +
-                            "        break;" +
-                            "    }" +
-                            "  }" +
-                            "}" +
-
-                            "if (aInput) {" +
-                            "  aInput.focus();" +
-                            "  aInput.value = '" + aNumber + "';" +
-                            "  aInput.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "  aInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  aInput.blur();" +
-                            "  return true;" +
-                            "}" +
-                            "return false;"
+                            "if (!aNumberLabel) return false;" +
+                            "" +
+                            "var matFormField = aNumberLabel.closest('mat-form-field');" +
+                            "if (!matFormField) return false;" +
+                            "" +
+                            "var input = matFormField.querySelector('input[type=\"text\"]');" + // Assuming type="text" based on HTML
+                            "if (!input) return false;" +
+                            "" +
+                            "// Optional: Add a check for maxlength=9 if desired for extra specificity, but it might overcomplicate if not strictly needed." +
+                            "// if (input.getAttribute('maxlength') !== '9') return false;" +
+                            "" +
+                            "input.focus();" +
+                            "input.value = '" + aNumber + "';" +
+                            "input.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "input.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "input.blur();" +
+                            "return true;"
             );
 
             if (result != null && result) {
@@ -799,7 +759,6 @@ public class FormFiller {
             return false;
         }
     }
-
     /**
      * FIXED: Fill passport fields using label targeting and random dropdown selection.
      * This method identifies fields by their <mat-label> and selects a random,
