@@ -569,7 +569,7 @@ public class FormFiller {
 
     /**
      * FIXED: Fill phone fields using label targeting
-     */
+
     private static boolean fillPhoneFieldsFixed(WebDriver driver) {
         try {
             System.out.println("Filling phone fields");
@@ -695,7 +695,486 @@ public class FormFiller {
             return false;
         }
     }
+     */
+    /**
+     * FIXED: Fill A# (Alien Number) - Enhanced targeting
+     */
+    private static boolean fillAlienNumberFixed(WebDriver driver, String aNumber) {
+        try {
+            System.out.println("FIXED: Filling A# (Alien Number) with: " + aNumber);
+            JavascriptExecutor js = (JavascriptExecutor) driver;
 
+            Boolean result = (Boolean) js.executeScript(
+                    "// Try multiple approaches to find A# input" +
+                            "var aInput = null;" +
+                            "// Method 1: Find by maxlength='9' and mask='0*'" +
+                            "var inputs1 = document.querySelectorAll('input[maxlength=\"9\"][mask=\"0*\"]');" +
+                            "if (inputs1.length > 0) {" +
+                            "  aInput = inputs1[inputs1.length - 1];" +
+                            "}" +
+                            "// Method 2: Find newest input with autocomplete='off'" +
+                            "if (!aInput) {" +
+                            "  var inputs2 = document.querySelectorAll('input[autocomplete=\"off\"][maxlength=\"9\"]');" +
+                            "  if (inputs2.length > 0) {" +
+                            "    aInput = inputs2[inputs2.length - 1];" +
+                            "  }" +
+                            "}" +
+                            "// Method 3: Find by A# label" +
+                            "if (!aInput) {" +
+                            "  var labels = document.querySelectorAll('mat-label');" +
+                            "  for (var i = 0; i < labels.length; i++) {" +
+                            "    if (labels[i].textContent.includes('A #')) {" +
+                            "      var formField = labels[i].closest('mat-form-field');" +
+                            "      if (formField) {" +
+                            "        aInput = formField.querySelector('input[type=\"text\"]');" +
+                            "        break;" +
+                            "      }" +
+                            "    }" +
+                            "  }" +
+                            "}" +
+                            "if (aInput) {" +
+                            "  aInput.focus();" +
+                            "  aInput.value = '" + aNumber + "';" +
+                            "  aInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  aInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  aInput.blur();" +
+                            "  return true;" +
+                            "}" +
+                            "return false;"
+            );
+
+            if (result != null && result) {
+                System.out.println("✅ FIXED: A# filled successfully");
+                return true;
+            } else {
+                System.out.println("❌ FIXED: Failed to fill A#");
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("❌ FIXED: Error filling A#: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * FIXED: Fill passport fields with enhanced dropdown selection
+     */
+    private static boolean fillPassportFieldsFixed(WebDriver driver, PersonData data) {
+        try {
+            System.out.println("FIXED: Filling passport fields");
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Step 1: Select passport type - FIXED with multiple option attempts
+            System.out.println("  - FIXED: Selecting passport type");
+            Boolean typeResult = (Boolean) js.executeScript(
+                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
+                            "if (selects.length < 2) return false;" +
+                            "var passportTypeSelect = selects[selects.length - 2];" +
+                            "var trigger = passportTypeSelect.querySelector('.mat-select-trigger');" +
+                            "if (!trigger) return false;" +
+                            "trigger.click();" +
+                            "setTimeout(() => {" +
+                            "  var options = document.querySelectorAll('mat-option');" +
+                            "  var visibleOptions = [];" +
+                            "  for (var i = 0; i < options.length; i++) {" +
+                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled')) {" +
+                            "      visibleOptions.push(options[i]);" +
+                            "    }" +
+                            "  }" +
+                            "  // Try to select P - Regular, or D - Diplomat, or any available option" +
+                            "  var selectedOption = null;" +
+                            "  for (var j = 0; j < visibleOptions.length; j++) {" +
+                            "    var optText = visibleOptions[j].textContent.trim();" +
+                            "    if (optText.includes('P - Regular') || optText.includes('D - Diplomat')) {" +
+                            "      selectedOption = visibleOptions[j];" +
+                            "      break;" +
+                            "    }" +
+                            "  }" +
+                            "  if (!selectedOption && visibleOptions.length > 0) {" +
+                            "    selectedOption = visibleOptions[0];" +
+                            "  }" +
+                            "  if (selectedOption) {" +
+                            "    selectedOption.click();" +
+                            "    setTimeout(() => document.body.click(), 500);" +
+                            "  }" +
+                            "}, 2000);" +
+                            "return true;"
+            );
+
+            Thread.sleep(4000);
+
+            // Step 2: Fill passport number
+            System.out.println("  - FIXED: Filling passport number");
+            Boolean numberResult = (Boolean) js.executeScript(
+                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([mask]):not([type=\"hidden\"])');" +
+                            "var visibleInputs = [];" +
+                            "for (var i = 0; i < inputs.length; i++) {" +
+                            "  var rect = inputs[i].getBoundingClientRect();" +
+                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null) {" +
+                            "    visibleInputs.push(inputs[i]);" +
+                            "  }" +
+                            "}" +
+                            "if (visibleInputs.length === 0) return false;" +
+                            "var passportInput = visibleInputs[visibleInputs.length - 1];" +
+                            "passportInput.focus();" +
+                            "passportInput.value = '" + data.getPassportNumber() + "';" +
+                            "passportInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "passportInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "passportInput.blur();" +
+                            "return true;"
+            );
+
+            Thread.sleep(2000);
+
+            // Step 3: Select passport country - FIXED
+            System.out.println("  - FIXED: Selecting passport country");
+            Boolean countryResult = (Boolean) js.executeScript(
+                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
+                            "if (selects.length === 0) return false;" +
+                            "var countrySelect = selects[selects.length - 1];" +
+                            "var trigger = countrySelect.querySelector('.mat-select-trigger');" +
+                            "if (!trigger) return false;" +
+                            "trigger.click();" +
+                            "setTimeout(() => {" +
+                            "  var options = document.querySelectorAll('mat-option');" +
+                            "  var visibleOptions = [];" +
+                            "  for (var i = 0; i < options.length; i++) {" +
+                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled')) {" +
+                            "      visibleOptions.push(options[i]);" +
+                            "    }" +
+                            "  }" +
+                            "  // Try to find USA or select first available" +
+                            "  var selectedOption = null;" +
+                            "  for (var j = 0; j < visibleOptions.length; j++) {" +
+                            "    var optText = visibleOptions[j].textContent.trim();" +
+                            "    if (optText.includes('USA') || optText.includes('UNITED STATES')) {" +
+                            "      selectedOption = visibleOptions[j];" +
+                            "      break;" +
+                            "    }" +
+                            "  }" +
+                            "  if (!selectedOption && visibleOptions.length > 0) {" +
+                            "    selectedOption = visibleOptions[0];" +
+                            "  }" +
+                            "  if (selectedOption) {" +
+                            "    selectedOption.click();" +
+                            "    setTimeout(() => document.body.click(), 500);" +
+                            "  }" +
+                            "}, 2000);" +
+                            "return true;"
+            );
+
+            Thread.sleep(3000);
+
+            // Step 4: Fill dates using existing working methods
+            System.out.println("  - FIXED: Filling passport dates");
+            List<String> passportDateInputs = findAllDateInputs(driver);
+            if (passportDateInputs.size() > 1) {
+                fillDateInputFixed(driver, passportDateInputs.get(passportDateInputs.size() - 2), data.getPassportIssueDate());
+                Thread.sleep(1000);
+                fillDateInputFixed(driver, passportDateInputs.get(passportDateInputs.size() - 1), data.getPassportExpiryDate());
+            }
+
+            System.out.println("✅ FIXED: Passport fields completed");
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("❌ FIXED: Error filling passport fields: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * FIXED: Fill phone fields with enhanced selection logic
+     */
+    private static boolean fillPhoneFieldsFixed(WebDriver driver) {
+        try {
+            System.out.println("FIXED: Filling phone fields with enhanced logic");
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Step 1: Select phone type - FIXED with better targeting
+            System.out.println("  - FIXED: Selecting phone type");
+            Boolean typeResult = (Boolean) js.executeScript(
+                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
+                            "if (selects.length < 2) return false;" +
+                            "var phoneTypeSelect = selects[selects.length - 2];" +
+                            "var trigger = phoneTypeSelect.querySelector('.mat-select-trigger');" +
+                            "if (!trigger) return false;" +
+                            "phoneTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "trigger.click();" +
+                            "setTimeout(() => {" +
+                            "  var options = document.querySelectorAll('mat-option');" +
+                            "  var validOptions = [];" +
+                            "  for (var i = 0; i < options.length; i++) {" +
+                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled') && options[i].textContent.trim().length > 0) {" +
+                            "      validOptions.push(options[i]);" +
+                            "    }" +
+                            "  }" +
+                            "  if (validOptions.length > 0) {" +
+                            "    var selectedOption = validOptions[0];" +
+                            "    selectedOption.click();" +
+                            "    setTimeout(() => document.body.click(), 500);" +
+                            "  }" +
+                            "}, 2000);" +
+                            "return true;"
+            );
+
+            Thread.sleep(4000);
+
+            // Step 2: Select phone country - FIXED with better targeting
+            System.out.println("  - FIXED: Selecting phone country");
+            Boolean countryResult = (Boolean) js.executeScript(
+                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
+                            "if (selects.length === 0) return false;" +
+                            "var phoneCountrySelect = selects[selects.length - 1];" +
+                            "var trigger = phoneCountrySelect.querySelector('.mat-select-trigger');" +
+                            "if (!trigger) return false;" +
+                            "phoneCountrySelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "trigger.click();" +
+                            "setTimeout(() => {" +
+                            "  var options = document.querySelectorAll('mat-option');" +
+                            "  var validOptions = [];" +
+                            "  for (var i = 0; i < options.length; i++) {" +
+                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled') && options[i].textContent.trim().length > 0) {" +
+                            "      validOptions.push(options[i]);" +
+                            "    }" +
+                            "  }" +
+                            "  if (validOptions.length > 0) {" +
+                            "    var selectedOption = validOptions[0];" +
+                            "    selectedOption.click();" +
+                            "    setTimeout(() => document.body.click(), 500);" +
+                            "  }" +
+                            "}, 2000);" +
+                            "return true;"
+            );
+
+            Thread.sleep(4000);
+
+            // Step 3: Fill phone number - FIXED
+            System.out.println("  - FIXED: Filling phone number");
+            String phoneNumber = "202" + (1000000 + random.nextInt(9000000));
+            Boolean numberResult = (Boolean) js.executeScript(
+                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])');" +
+                            "var visibleInputs = [];" +
+                            "for (var i = 0; i < inputs.length; i++) {" +
+                            "  var rect = inputs[i].getBoundingClientRect();" +
+                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null) {" +
+                            "    visibleInputs.push(inputs[i]);" +
+                            "  }" +
+                            "}" +
+                            "if (visibleInputs.length === 0) return false;" +
+                            "var phoneInput = visibleInputs[visibleInputs.length - 1];" +
+                            "phoneInput.focus();" +
+                            "phoneInput.value = '" + phoneNumber + "';" +
+                            "phoneInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "phoneInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "phoneInput.blur();" +
+                            "return true;"
+            );
+
+            Thread.sleep(2000);
+
+            if (numberResult != null && numberResult) {
+                System.out.println("✅ FIXED: Phone fields completed");
+                return true;
+            } else {
+                System.out.println("❌ FIXED: Failed to fill phone number");
+                return false;
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ FIXED: Error filling phone fields: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * FIXED: Fill address fields with sequential approach
+
+    private static boolean fillAddressFieldsFixed(WebDriver driver) {
+        try {
+            System.out.println("FIXED: Filling address fields with proper sequencing");
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Step 1: Select address type - FIXED
+            System.out.println("  - FIXED Step 1: Selecting address type");
+            Boolean typeResult = (Boolean) js.executeScript(
+                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
+                            "if (selects.length === 0) return false;" +
+                            "var addressTypeSelect = selects[selects.length - 1];" +
+                            "var trigger = addressTypeSelect.querySelector('.mat-select-trigger');" +
+                            "if (!trigger) return false;" +
+                            "addressTypeSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "trigger.click();" +
+                            "setTimeout(() => {" +
+                            "  var options = document.querySelectorAll('mat-option');" +
+                            "  var validOptions = [];" +
+                            "  for (var i = 0; i < options.length; i++) {" +
+                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled') && options[i].textContent.trim().length > 0) {" +
+                            "      validOptions.push(options[i]);" +
+                            "    }" +
+                            "  }" +
+                            "  if (validOptions.length > 0) {" +
+                            "    var selectedOption = validOptions[0];" +
+                            "    selectedOption.click();" +
+                            "    setTimeout(() => document.body.click(), 500);" +
+                            "  }" +
+                            "}, 2000);" +
+                            "return true;"
+            );
+
+            Thread.sleep(4000);
+
+            // Step 2: Fill street address - FIXED
+            System.out.println("  - FIXED Step 2: Filling street address");
+            Boolean streetResult = (Boolean) js.executeScript(
+                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])');" +
+                            "var visibleInputs = [];" +
+                            "for (var i = 0; i < inputs.length; i++) {" +
+                            "  var rect = inputs[i].getBoundingClientRect();" +
+                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null && inputs[i].value === '') {" +
+                            "    visibleInputs.push(inputs[i]);" +
+                            "  }" +
+                            "}" +
+                            "if (visibleInputs.length === 0) return false;" +
+                            "var streetInput = visibleInputs[visibleInputs.length - 1];" +
+                            "streetInput.focus();" +
+                            "streetInput.value = '123 Test Street';" +
+                            "streetInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "streetInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "streetInput.blur();" +
+                            "return true;"
+            );
+
+            Thread.sleep(3000);
+
+            // Step 3: Fill city - FIXED
+            System.out.println("  - FIXED Step 3: Filling city");
+            Boolean cityResult = (Boolean) js.executeScript(
+                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])');" +
+                            "var visibleInputs = [];" +
+                            "for (var i = 0; i < inputs.length; i++) {" +
+                            "  var rect = inputs[i].getBoundingClientRect();" +
+                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null && inputs[i].value === '') {" +
+                            "    visibleInputs.push(inputs[i]);" +
+                            "  }" +
+                            "}" +
+                            "if (visibleInputs.length === 0) return false;" +
+                            "var cityInput = visibleInputs[visibleInputs.length - 1];" +
+                            "cityInput.focus();" +
+                            "cityInput.value = 'Washington';" +
+                            "cityInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "cityInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "cityInput.blur();" +
+                            "return true;"
+            );
+
+            Thread.sleep(3000);
+
+            // Step 4: Select state - FIXED
+            System.out.println("  - FIXED Step 4: Selecting state");
+            Boolean stateResult = (Boolean) js.executeScript(
+                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
+                            "if (selects.length === 0) return false;" +
+                            "var stateSelect = selects[selects.length - 1];" +
+                            "var trigger = stateSelect.querySelector('.mat-select-trigger');" +
+                            "if (!trigger) return false;" +
+                            "stateSelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "trigger.click();" +
+                            "setTimeout(() => {" +
+                            "  var options = document.querySelectorAll('mat-option');" +
+                            "  var validOptions = [];" +
+                            "  for (var i = 0; i < options.length; i++) {" +
+                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled') && options[i].textContent.trim().length > 0) {" +
+                            "      validOptions.push(options[i]);" +
+                            "    }" +
+                            "  }" +
+                            "  if (validOptions.length > 0) {" +
+                            "    var selectedOption = validOptions[0];" +
+                            "    selectedOption.click();" +
+                            "    setTimeout(() => document.body.click(), 500);" +
+                            "  }" +
+                            "}, 2000);" +
+                            "return true;"
+            );
+
+            Thread.sleep(5000); // Wait longer for country dropdown to appear
+
+            // Step 5: Select country - FIXED
+            System.out.println("  - FIXED Step 5: Selecting country");
+            Boolean countryResult = (Boolean) js.executeScript(
+                    "var selects = document.querySelectorAll('mat-select:not([aria-disabled=\"true\"])');" +
+                            "if (selects.length === 0) return false;" +
+                            "var countrySelect = selects[selects.length - 1];" +
+                            "var trigger = countrySelect.querySelector('.mat-select-trigger');" +
+                            "if (!trigger) return false;" +
+                            "countrySelect.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "trigger.click();" +
+                            "setTimeout(() => {" +
+                            "  var options = document.querySelectorAll('mat-option');" +
+                            "  var validOptions = [];" +
+                            "  for (var i = 0; i < options.length; i++) {" +
+                            "    if (options[i].offsetParent !== null && !options[i].classList.contains('mat-option-disabled') && options[i].textContent.trim().length > 0) {" +
+                            "      validOptions.push(options[i]);" +
+                            "    }" +
+                            "  }" +
+                            "  // Try to find USA or select first available" +
+                            "  var selectedOption = null;" +
+                            "  for (var j = 0; j < validOptions.length; j++) {" +
+                            "    var optText = validOptions[j].textContent.trim();" +
+                            "    if (optText.includes('USA') || optText.includes('UNITED STATES')) {" +
+                            "      selectedOption = validOptions[j];" +
+                            "      break;" +
+                            "    }" +
+                            "  }" +
+                            "  if (!selectedOption && validOptions.length > 0) {" +
+                            "    selectedOption = validOptions[0];" +
+                            "  }" +
+                            "  if (selectedOption) {" +
+                            "    selectedOption.click();" +
+                            "    setTimeout(() => document.body.click(), 500);" +
+                            "  }" +
+                            "}, 2000);" +
+                            "return true;"
+            );
+
+            Thread.sleep(4000);
+
+            // Step 6: Fill postal code - FIXED
+            System.out.println("  - FIXED Step 6: Filling postal code");
+            Boolean postalResult = (Boolean) js.executeScript(
+                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])');" +
+                            "var visibleInputs = [];" +
+                            "for (var i = 0; i < inputs.length; i++) {" +
+                            "  var rect = inputs[i].getBoundingClientRect();" +
+                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null && inputs[i].value === '') {" +
+                            "    visibleInputs.push(inputs[i]);" +
+                            "  }" +
+                            "}" +
+                            "if (visibleInputs.length === 0) return false;" +
+                            "var postalInput = visibleInputs[visibleInputs.length - 1];" +
+                            "postalInput.focus();" +
+                            "postalInput.value = '20001';" +
+                            "postalInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "postalInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "postalInput.blur();" +
+                            "return true;"
+            );
+
+            Thread.sleep(2000);
+
+            System.out.println("✅ FIXED: Address fields completed successfully");
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("❌ FIXED: Error filling address fields: " + e.getMessage());
+            return false;
+        }
+    }
+
+     */
     /**
      * FIXED: Fill alternative communication fields
      */
