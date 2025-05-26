@@ -118,14 +118,14 @@ public class FormAutomation {
             // Try multiple strategies to find TECS ID
             String tecsId = null;
 
-            // Strategy 1: Look for elements containing "TECS" and numbers
+            // Strategy 1: Look for "TECS ID:" followed by the actual ID (MOST SPECIFIC)
             tecsId = (String) js.executeScript(
                     "var elements = document.querySelectorAll('*');" +
                             "for (var i = 0; i < elements.length; i++) {" +
                             "  var text = elements[i].textContent || elements[i].innerText || '';" +
-                            "  var match = text.match(/TECS[\\s\\-_#:]*([A-Z0-9]{8,20})/i);" +
+                            "  var match = text.match(/TECS\\s+ID\\s*:\\s*([A-Z0-9]{10,20})/i);" +
                             "  if (match && match[1]) {" +
-                            "    console.log('Found TECS ID via Strategy 1:', match[1]);" +
+                            "    console.log('Found TECS ID via Strategy 1 (TECS ID:):', match[1]);" +
                             "    return match[1];" +
                             "  }" +
                             "}" +
@@ -133,21 +133,56 @@ public class FormAutomation {
             );
 
             if (tecsId != null && !tecsId.trim().isEmpty()) {
-                System.out.println("✅ TECS ID captured via Strategy 1: " + tecsId);
+                System.out.println("✅ TECS ID captured via Strategy 1 (TECS ID:): " + tecsId);
                 return tecsId.trim();
             }
 
-            // Strategy 2: Look for ID patterns in success messages or confirmation
+            // Strategy 2: Look in success message elements specifically
+            tecsId = (String) js.executeScript(
+                    "var successElements = document.querySelectorAll('.tecs-submitted-message, .tecs-flex-item, .success, .confirmation');" +
+                            "for (var i = 0; i < successElements.length; i++) {" +
+                            "  var text = successElements[i].textContent || successElements[i].innerText || '';" +
+                            "  var match = text.match(/TECS\\s+ID\\s*:\\s*([A-Z0-9]{10,20})/i);" +
+                            "  if (match && match[1]) {" +
+                            "    console.log('Found TECS ID via Strategy 2 (success elements):', match[1]);" +
+                            "    return match[1];" +
+                            "  }" +
+                            "}" +
+                            "return null;"
+            );
+
+            if (tecsId != null && !tecsId.trim().isEmpty()) {
+                System.out.println("✅ TECS ID captured via Strategy 2 (success elements): " + tecsId);
+                return tecsId.trim();
+            }
+
+            // Strategy 3: Look for the specific pattern P3G followed by numbers and letters
+            tecsId = (String) js.executeScript(
+                    "var bodyText = document.body.textContent || document.body.innerText || '';" +
+                            "var match = bodyText.match(/\\b(P[0-9A-Z]{2}[0-9]{8}[A-Z0-9]{2})\\b/g);" +
+                            "if (match && match.length > 0) {" +
+                            "  console.log('Found TECS ID via Strategy 3 (P3G pattern):', match[0]);" +
+                            "  return match[0];" +
+                            "}" +
+                            "return null;"
+            );
+
+            if (tecsId != null && !tecsId.trim().isEmpty()) {
+                System.out.println("✅ TECS ID captured via Strategy 3 (P3G pattern): " + tecsId);
+                return tecsId.trim();
+            }
+
+            // Strategy 4: Look for any text that contains "created" and extract nearby IDs
             tecsId = (String) js.executeScript(
                     "var elements = document.querySelectorAll('*');" +
                             "for (var i = 0; i < elements.length; i++) {" +
                             "  var text = elements[i].textContent || elements[i].innerText || '';" +
-                            "  if (text.toLowerCase().includes('id') || text.toLowerCase().includes('number') || text.toLowerCase().includes('reference')) {" +
-                            "    var match = text.match(/([A-Z0-9]{8,20})/g);" +
+                            "  if (text.toLowerCase().includes('created') || text.toLowerCase().includes('successfully')) {" +
+                            "    var match = text.match(/([A-Z][0-9A-Z]{10,20})/g);" +
                             "    if (match) {" +
                             "      for (var j = 0; j < match.length; j++) {" +
-                            "        if (match[j].length >= 8) {" +
-                            "          console.log('Found potential TECS ID via Strategy 2:', match[j]);" +
+                            "        if (match[j].length >= 10 && match[j].match(/^[A-Z][0-9A-Z]+$/)) {" +
+                            "          console.log('Found TECS ID via Strategy 4 (created message):', match[j]);" +
                             "          return match[j];" +
                             "        }" +
                             "      }" +
@@ -158,65 +193,29 @@ public class FormAutomation {
             );
 
             if (tecsId != null && !tecsId.trim().isEmpty()) {
-                System.out.println("✅ TECS ID captured via Strategy 2: " + tecsId);
+                System.out.println("✅ TECS ID captured via Strategy 4 (created message): " + tecsId);
                 return tecsId.trim();
             }
 
-            // Strategy 3: Look for any alphanumeric ID on the page
+            // Strategy 5: Look for any alphanumeric string that starts with a letter and is 10+ chars
             tecsId = (String) js.executeScript(
                     "var bodyText = document.body.textContent || document.body.innerText || '';" +
-                            "var matches = bodyText.match(/\\b[A-Z0-9]{10,}\\b/g);" +
+                            "var matches = bodyText.match(/\\b[A-Z][A-Z0-9]{9,}\\b/g);" +
                             "if (matches && matches.length > 0) {" +
-                            "  console.log('Found potential ID via Strategy 3:', matches[0]);" +
-                            "  return matches[0];" +
-                            "}" +
-                            "return null;"
-            );
-
-            if (tecsId != null && !tecsId.trim().isEmpty()) {
-                System.out.println("✅ TECS ID captured via Strategy 3: " + tecsId);
-                return tecsId.trim();
-            }
-
-            // Strategy 4: Look in URL parameters
-            String currentUrl = driver.getCurrentUrl();
-            if (currentUrl.contains("id=") || currentUrl.contains("tecs")) {
-                tecsId = (String) js.executeScript(
-                        "var url = window.location.href;" +
-                                "var match = url.match(/[?&](?:id|tecs|reference)=([A-Z0-9]+)/i);" +
-                                "if (match && match[1]) {" +
-                                "  console.log('Found TECS ID in URL:', match[1]);" +
-                                "  return match[1];" +
-                                "}" +
-                                "return null;"
-                );
-
-                if (tecsId != null && !tecsId.trim().isEmpty()) {
-                    System.out.println("✅ TECS ID captured from URL: " + tecsId);
-                    return tecsId.trim();
-                }
-            }
-
-            // Strategy 5: Look for success message elements
-            tecsId = (String) js.executeScript(
-                    "var successElements = document.querySelectorAll('.success, .confirmation, .alert-success, [class*=\"success\"], [id*=\"success\"]');" +
-                            "for (var i = 0; i < successElements.length; i++) {" +
-                            "  var text = successElements[i].textContent || successElements[i].innerText || '';" +
-                            "  var match = text.match(/([A-Z0-9]{8,20})/g);" +
-                            "  if (match) {" +
-                            "    for (var j = 0; j < match.length; j++) {" +
-                            "      if (match[j].length >= 8) {" +
-                            "        console.log('Found TECS ID in success element:', match[j]);" +
-                            "        return match[j];" +
-                            "      }" +
-                            "    }" +
+                            "  // Filter out common words that might match this pattern" +
+                            "  var filtered = matches.filter(function(m) {" +
+                            "    return !m.match(/^(SUBMITTED|CREATED|SUCCESSFULLY|UNCLASSIFIED)$/i);" +
+                            "  });" +
+                            "  if (filtered.length > 0) {" +
+                            "    console.log('Found potential TECS ID via Strategy 5:', filtered[0]);" +
+                            "    return filtered[0];" +
                             "  }" +
                             "}" +
                             "return null;"
             );
 
             if (tecsId != null && !tecsId.trim().isEmpty()) {
-                System.out.println("✅ TECS ID captured from success element: " + tecsId);
+                System.out.println("✅ TECS ID captured via Strategy 5 (alphanumeric): " + tecsId);
                 return tecsId.trim();
             }
 
@@ -225,7 +224,24 @@ public class FormAutomation {
             // Debug: Print page content to console for manual inspection
             String pageContent = (String) js.executeScript("return document.body.textContent || document.body.innerText || '';");
             System.out.println("📄 Page content for manual inspection:");
-            System.out.println(pageContent.substring(0, Math.min(500, pageContent.length())) + "...");
+            System.out.println("FULL PAGE TEXT:");
+            System.out.println(pageContent);
+
+            // Also try to find any text containing "TECS" for debugging
+            String tecsRelatedText = (String) js.executeScript(
+                    "var elements = document.querySelectorAll('*');" +
+                            "var tecsTexts = [];" +
+                            "for (var i = 0; i < elements.length; i++) {" +
+                            "  var text = elements[i].textContent || elements[i].innerText || '';" +
+                            "  if (text.toLowerCase().includes('tecs')) {" +
+                            "    tecsTexts.push(text.trim());" +
+                            "  }" +
+                            "}" +
+                            "return tecsTexts.join(' | ');"
+            );
+
+            System.out.println("🔍 All TECS-related text found:");
+            System.out.println(tecsRelatedText);
 
             return null;
 
