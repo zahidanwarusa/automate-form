@@ -712,103 +712,176 @@ public class FormFiller {
      */
 
     /**
-     * FIXED: Fill A# (Alien Number) - Final attempt with direct label-to-input ID linking and robust logging
+     * SIMPLIFIED and ROBUST: Fill A# (Alien Number) field
+     * This method uses multiple strategies to reliably find and fill the A# input field
      */
     private static boolean fillAlienNumberFixed(WebDriver driver, String aNumber) {
         try {
-            System.out.println("FIXED: Attempting to fill A# (Alien Number) with: " + aNumber);
+            System.out.println("🎯 SIMPLIFIED: Filling A# field with: " + aNumber);
             JavascriptExecutor js = (JavascriptExecutor) driver;
 
-            Boolean result = (Boolean) js.executeScript(
-                    "console.log('--- Starting A# filling script (Final Attempt) ---');" +
+            // Wait a moment for the field to be fully rendered
+            Thread.sleep(1000);
+
+            // Strategy 1: Direct approach - find input with mask="0*" and maxlength="9"
+            Boolean result1 = (Boolean) js.executeScript(
+                    "console.log('Strategy 1: Direct input targeting');" +
+                            "var inputs = document.querySelectorAll('input[mask=\"0*\"][maxlength=\"9\"]');" +
+                            "console.log('Found ' + inputs.length + ' inputs with mask=0* and maxlength=9');" +
+                            "if (inputs.length > 0) {" +
+                            "  var aInput = inputs[inputs.length - 1];" + // Get the newest one
+                            "  console.log('Found A# input, attempting to fill...');" +
+                            "  aInput.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  aInput.click();" +
+                            "  aInput.focus();" +
+                            "  aInput.value = '';" + // Clear first
+                            "  aInput.value = '" + aNumber + "';" +
+                            "  console.log('Value set to: ' + aInput.value);" +
+                            "  " +
+                            "  // Trigger multiple events for Angular Material compatibility" +
+                            "  var inputEvent = new Event('input', {bubbles: true, cancelable: true});" +
+                            "  var changeEvent = new Event('change', {bubbles: true, cancelable: true});" +
+                            "  var blurEvent = new Event('blur', {bubbles: true, cancelable: true});" +
+                            "  " +
+                            "  aInput.dispatchEvent(inputEvent);" +
+                            "  aInput.dispatchEvent(changeEvent);" +
+                            "  setTimeout(() => {" +
+                            "    aInput.blur();" +
+                            "    aInput.dispatchEvent(blurEvent);" +
+                            "  }, 100);" +
+                            "  " +
+                            "  console.log('Events dispatched successfully');" +
+                            "  return true;" +
+                            "}" +
+                            "return false;"
+            );
+
+            if (result1 != null && result1) {
+                Thread.sleep(2000);
+                System.out.println("✅ Strategy 1 SUCCESS: A# filled using direct input targeting");
+                return true;
+            }
+
+            System.out.println("⚠️ Strategy 1 failed, trying Strategy 2...");
+
+            // Strategy 2: Find by label "A #" and traverse to input
+            Boolean result2 = (Boolean) js.executeScript(
+                    "console.log('Strategy 2: Label-based targeting');" +
+                            "var labels = document.querySelectorAll('mat-label');" +
                             "var aInput = null;" +
-                            "try {" +
-                            "  var labels = document.querySelectorAll('mat-label');" +
-                            "  console.log('Found ' + labels.length + ' mat-label elements.');" +
-                            "  for (var i = 0; i < labels.length; i++) {" +
-                            "    var labelText = labels[i].textContent.trim();" +
-                            "    console.log('Checking label text: \"' + labelText + '\"');" +
-                            "    if (labelText.includes('A #')) {" +
-                            "      console.log('Detected A# label: \"' + labelText + '\"');" +
-                            "      var inputId = labels[i].getAttribute('for');" + // Get the ID from the 'for' attribute
-                            "      if (inputId) {" +
-                            "        aInput = document.getElementById(inputId);" + // Directly find input by ID
-                            "        if (aInput) {" +
-                            "          console.log('Found input element using label \"for\" attribute. ID: ' + inputId);" +
-                            "          // Optional: Add further checks on 'aInput' attributes like maxlength, type if needed for stronger validation" +
-                            "          if (aInput.type === 'text' && aInput.getAttribute('maxlength') === '9') {" +
-                            "            console.log('Input attributes (type=text, maxlength=9) match expectations.');" +
-                            "            break; // Found the correct input, exit loop" +
-                            "          } else {" +
-                            "            console.warn('Input found by ID did not match expected type/maxlength. Type: ' + aInput.type + ', Maxlength: ' + aInput.getAttribute('maxlength'));" +
-                            "            aInput = null; // Discard if attributes don't match exactly" +
-                            "          }" +
-                            "        } else {" +
-                            "          console.warn('Input element not found by ID: ' + inputId + ' from label \"for\" attribute.');" +
-                            "        }" +
-                            "      } else {" +
-                            "        console.warn('A# label found but missing \"for\" attribute. Falling back to parent traversal.');" +
-                            "        var formField = labels[i].closest('mat-form-field');" +
-                            "        if (formField) {" +
-                            "          aInput = formField.querySelector('input[type=\"text\"][maxlength=\"9\"]');" +
-                            "          if (aInput) {" +
-                            "            console.log('Found input via parent mat-form-field traversal.');" +
-                            "            break;" +
-                            "          } else {" +
-                            "            console.warn('No input matching criteria found within mat-form-field.');" +
-                            "          }" +
-                            "        } else {" +
-                            "          console.warn('No mat-form-field parent found for the A# label.');" +
-                            "        }" +
+                            "for (var i = 0; i < labels.length; i++) {" +
+                            "  var labelText = labels[i].textContent.trim();" +
+                            "  console.log('Checking label: ' + labelText);" +
+                            "  if (labelText.includes('A #') || labelText.includes('A#')) {" +
+                            "    console.log('Found A# label: ' + labelText);" +
+                            "    var formField = labels[i].closest('mat-form-field');" +
+                            "    if (formField) {" +
+                            "      aInput = formField.querySelector('input[type=\"text\"]');" +
+                            "      if (aInput) {" +
+                            "        console.log('Found input via label traversal');" +
+                            "        break;" +
                             "      }" +
                             "    }" +
                             "  }" +
-                            "} catch (e) {" +
-                            "  console.error('Error during A# input lookup: ' + e.message);" +
                             "}" +
                             "" +
-                            "if (!aInput) {" +
-                            "  console.error('Final decision: A# input element not found after all attempts.');" +
-                            "  return false;" +
-                            "}" +
-                            "" +
-                            "try {" +
-                            "  // Ensure the element is visible and enabled before attempting to interact" +
-                            "  var rect = aInput.getBoundingClientRect();" +
-                            "  if (!(rect.width > 0 && rect.height > 0 && aInput.offsetParent !== null && !aInput.disabled && !aInput.readOnly)) {" +
-                            "    console.error('A# input element found but not visible, enabled, or interactable.');" +
-                            "    return false;" +
-                            "  }" +
-                            "  " +
-                            "  console.log('A# input element found and interactable. ID: ' + (aInput.id || 'N/A') + ', Type: ' + aInput.type + ', Maxlength: ' + aInput.getAttribute('maxlength'));" +
+                            "if (aInput) {" +
+                            "  console.log('Found A# input via label, attempting to fill...');" +
+                            "  aInput.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  aInput.click();" +
                             "  aInput.focus();" +
-                            "  console.log('Input focused.');" +
+                            "  aInput.value = '';" +
                             "  aInput.value = '" + aNumber + "';" +
-                            "  console.log('Value set to: ' + aInput.value + '. Dispatched input & change events.');" +
+                            "  console.log('Value set to: ' + aInput.value);" +
+                            "  " +
                             "  aInput.dispatchEvent(new Event('input', {bubbles: true}));" +
                             "  aInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  aInput.blur();" +
-                            "  console.log('Input blurred.');" +
-                            "  console.log('--- A# filling script finished successfully ---');" +
+                            "  setTimeout(() => aInput.blur(), 100);" +
                             "  return true;" +
-                            "} catch (e) {" +
-                            "  console.error('Error during A# input interaction: ' + e.message);" +
-                            "  return false;" +
+                            "}" +
+                            "return false;"
+            );
+
+            if (result2 != null && result2) {
+                Thread.sleep(2000);
+                System.out.println("✅ Strategy 2 SUCCESS: A# filled using label targeting");
+                return true;
+            }
+
+            System.out.println("⚠️ Strategy 2 failed, trying Strategy 3...");
+
+            // Strategy 3: Find the newest text input that's empty and in a visible form field
+            Boolean result3 = (Boolean) js.executeScript(
+                    "console.log('Strategy 3: Newest empty input targeting');" +
+                            "var inputs = document.querySelectorAll('input.mat-input-element[type=\"text\"]:not([readonly]):not([disabled])');" +
+                            "var visibleEmptyInputs = [];" +
+                            "for (var i = 0; i < inputs.length; i++) {" +
+                            "  var rect = inputs[i].getBoundingClientRect();" +
+                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null && inputs[i].value === '') {" +
+                            "    // Check if it might be the A# field by checking nearby labels or attributes" +
+                            "    var formField = inputs[i].closest('mat-form-field');" +
+                            "    if (formField) {" +
+                            "      var label = formField.querySelector('mat-label');" +
+                            "      if (label && (label.textContent.includes('A #') || label.textContent.includes('A#'))) {" +
+                            "        visibleEmptyInputs.push(inputs[i]);" +
+                            "        console.log('Found potential A# input');" +
+                            "      } else if (inputs[i].getAttribute('maxlength') === '9' || inputs[i].getAttribute('mask') === '0*') {" +
+                            "        visibleEmptyInputs.push(inputs[i]);" +
+                            "        console.log('Found input with A# characteristics (maxlength=9 or mask=0*)');" +
+                            "      }" +
+                            "    }" +
+                            "  }" +
+                            "}" +
+                            "" +
+                            "if (visibleEmptyInputs.length > 0) {" +
+                            "  var aInput = visibleEmptyInputs[visibleEmptyInputs.length - 1];" +
+                            "  console.log('Using newest potential A# input');" +
+                            "  aInput.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  aInput.click();" +
+                            "  aInput.focus();" +
+                            "  aInput.value = '" + aNumber + "';" +
+                            "  console.log('Value set to: ' + aInput.value);" +
+                            "  " +
+                            "  aInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  aInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  setTimeout(() => aInput.blur(), 100);" +
+                            "  return true;" +
+                            "}" +
+                            "console.log('No suitable inputs found');" +
+                            "return false;"
+            );
+
+            if (result3 != null && result3) {
+                Thread.sleep(2000);
+                System.out.println("✅ Strategy 3 SUCCESS: A# filled using newest empty input");
+                return true;
+            }
+
+            System.out.println("❌ All strategies failed for A# field");
+
+            // Debug: Print available inputs to console
+            js.executeScript(
+                    "console.log('=== DEBUG: Available inputs ===');" +
+                            "var allInputs = document.querySelectorAll('input');" +
+                            "for (var i = 0; i < allInputs.length; i++) {" +
+                            "  var input = allInputs[i];" +
+                            "  var rect = input.getBoundingClientRect();" +
+                            "  if (rect.width > 0 && rect.height > 0) {" +
+                            "    console.log('Input ' + i + ': type=' + input.type + ', id=' + input.id + ', maxlength=' + input.getAttribute('maxlength') + ', mask=' + input.getAttribute('mask') + ', value=' + input.value);" +
+                            "    var formField = input.closest('mat-form-field');" +
+                            "    if (formField) {" +
+                            "      var label = formField.querySelector('mat-label');" +
+                            "      if (label) console.log('  Label: ' + label.textContent);" +
+                            "    }" +
+                            "  }" +
                             "}"
             );
 
-            // Remember to call printBrowserConsoleLogs(driver) after this method
-            // in your main execution flow to see these detailed logs in Eclipse.
+            return false;
 
-            if (result != null && result) {
-                System.out.println("✅ FIXED: A# filled successfully");
-                return true;
-            } else {
-                System.out.println("❌ FIXED: Failed to fill A# (JavaScript returned false)");
-                return false;
-            }
         } catch (Exception e) {
-            System.err.println("❌ FIXED: Error filling A#: " + e.getMessage());
+            System.err.println("❌ Error filling A# field: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
