@@ -14,7 +14,7 @@ import java.util.Random;
 /**
  * ENHANCED FormFiller with label-based targeting for better reliability
  */
-public class FormFiller {
+public class EnhancedFormFiller {
     private static final Random random = new Random();
     private static final Duration DEFAULT_WAIT_TIME = Duration.ofSeconds(10);
 
