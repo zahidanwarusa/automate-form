@@ -712,49 +712,99 @@ public class FormFiller {
      */
 
     /**
-     * FIXED: Fill A# (Alien Number) - Refined targeting by label and attributes
+     * FIXED: Fill A# (Alien Number) - Final attempt with direct label-to-input ID linking and robust logging
      */
     private static boolean fillAlienNumberFixed(WebDriver driver, String aNumber) {
         try {
-            System.out.println("FIXED: Filling A# (Alien Number) with: " + aNumber);
+            System.out.println("FIXED: Attempting to fill A# (Alien Number) with: " + aNumber);
             JavascriptExecutor js = (JavascriptExecutor) driver;
 
             Boolean result = (Boolean) js.executeScript(
-                    "var aInput = null;" +
-                            "var labels = document.querySelectorAll('mat-label');" +
-                            "for (var i = 0; i < labels.length; i++) {" +
-                            "  var labelText = labels[i].textContent.trim();" +
-                            "  if (labelText.includes('A #')) {" +
-                            "    var formField = labels[i].closest('mat-form-field');" +
-                            "    if (formField) {" +
-                            "      // Find input within this specific mat-form-field that matches attributes" +
-                            "      aInput = formField.querySelector('input[type=\"text\"][maxlength=\"9\"]');" +
-                            "      if (aInput) {" +
-                            "        break; // Found the specific input" +
+                    "console.log('--- Starting A# filling script (Final Attempt) ---');" +
+                            "var aInput = null;" +
+                            "try {" +
+                            "  var labels = document.querySelectorAll('mat-label');" +
+                            "  console.log('Found ' + labels.length + ' mat-label elements.');" +
+                            "  for (var i = 0; i < labels.length; i++) {" +
+                            "    var labelText = labels[i].textContent.trim();" +
+                            "    console.log('Checking label text: \"' + labelText + '\"');" +
+                            "    if (labelText.includes('A #')) {" +
+                            "      console.log('Detected A# label: \"' + labelText + '\"');" +
+                            "      var inputId = labels[i].getAttribute('for');" + // Get the ID from the 'for' attribute
+                            "      if (inputId) {" +
+                            "        aInput = document.getElementById(inputId);" + // Directly find input by ID
+                            "        if (aInput) {" +
+                            "          console.log('Found input element using label \"for\" attribute. ID: ' + inputId);" +
+                            "          // Optional: Add further checks on 'aInput' attributes like maxlength, type if needed for stronger validation" +
+                            "          if (aInput.type === 'text' && aInput.getAttribute('maxlength') === '9') {" +
+                            "            console.log('Input attributes (type=text, maxlength=9) match expectations.');" +
+                            "            break; // Found the correct input, exit loop" +
+                            "          } else {" +
+                            "            console.warn('Input found by ID did not match expected type/maxlength. Type: ' + aInput.type + ', Maxlength: ' + aInput.getAttribute('maxlength'));" +
+                            "            aInput = null; // Discard if attributes don't match exactly" +
+                            "          }" +
+                            "        } else {" +
+                            "          console.warn('Input element not found by ID: ' + inputId + ' from label \"for\" attribute.');" +
+                            "        }" +
+                            "      } else {" +
+                            "        console.warn('A# label found but missing \"for\" attribute. Falling back to parent traversal.');" +
+                            "        var formField = labels[i].closest('mat-form-field');" +
+                            "        if (formField) {" +
+                            "          aInput = formField.querySelector('input[type=\"text\"][maxlength=\"9\"]');" +
+                            "          if (aInput) {" +
+                            "            console.log('Found input via parent mat-form-field traversal.');" +
+                            "            break;" +
+                            "          } else {" +
+                            "            console.warn('No input matching criteria found within mat-form-field.');" +
+                            "          }" +
+                            "        } else {" +
+                            "          console.warn('No mat-form-field parent found for the A# label.');" +
+                            "        }" +
                             "      }" +
                             "    }" +
                             "  }" +
+                            "} catch (e) {" +
+                            "  console.error('Error during A# input lookup: ' + e.message);" +
                             "}" +
                             "" +
                             "if (!aInput) {" +
-                            "  console.error('A# input not found using label and attribute criteria.');" +
+                            "  console.error('Final decision: A# input element not found after all attempts.');" +
                             "  return false;" +
                             "}" +
                             "" +
-                            "input = aInput;" + // Assign to 'input' variable for consistency
-                            "input.focus();" +
-                            "input.value = '" + aNumber + "';" +
-                            "input.dispatchEvent(new Event('input', {bubbles: true}));" +
-                            "input.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "input.blur();" +
-                            "return true;"
+                            "try {" +
+                            "  // Ensure the element is visible and enabled before attempting to interact" +
+                            "  var rect = aInput.getBoundingClientRect();" +
+                            "  if (!(rect.width > 0 && rect.height > 0 && aInput.offsetParent !== null && !aInput.disabled && !aInput.readOnly)) {" +
+                            "    console.error('A# input element found but not visible, enabled, or interactable.');" +
+                            "    return false;" +
+                            "  }" +
+                            "  " +
+                            "  console.log('A# input element found and interactable. ID: ' + (aInput.id || 'N/A') + ', Type: ' + aInput.type + ', Maxlength: ' + aInput.getAttribute('maxlength'));" +
+                            "  aInput.focus();" +
+                            "  console.log('Input focused.');" +
+                            "  aInput.value = '" + aNumber + "';" +
+                            "  console.log('Value set to: ' + aInput.value + '. Dispatched input & change events.');" +
+                            "  aInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  aInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  aInput.blur();" +
+                            "  console.log('Input blurred.');" +
+                            "  console.log('--- A# filling script finished successfully ---');" +
+                            "  return true;" +
+                            "} catch (e) {" +
+                            "  console.error('Error during A# input interaction: ' + e.message);" +
+                            "  return false;" +
+                            "}"
             );
+
+            // Remember to call printBrowserConsoleLogs(driver) after this method
+            // in your main execution flow to see these detailed logs in Eclipse.
 
             if (result != null && result) {
                 System.out.println("✅ FIXED: A# filled successfully");
                 return true;
             } else {
-                System.out.println("❌ FIXED: Failed to fill A#");
+                System.out.println("❌ FIXED: Failed to fill A# (JavaScript returned false)");
                 return false;
             }
         } catch (Exception e) {
@@ -762,6 +812,7 @@ public class FormFiller {
             return false;
         }
     }
+
     /**
      * FIXED: Fill passport fields using label targeting and random dropdown selection.
      * This method identifies fields by their <mat-label> and selects a random,
