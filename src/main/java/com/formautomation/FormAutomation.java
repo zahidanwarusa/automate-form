@@ -3,6 +3,7 @@ package com.formautomation;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.JavascriptExecutor;
 
 public class FormAutomation {
     public static void main(String[] args) {
@@ -14,7 +15,7 @@ public class FormAutomation {
         // Generate random person data
         PersonData personData = DataGenerator.generatePersonData();
 
-        // Save data to Excel for future reference
+        // Save data to Excel for future reference (initial save without TECS ID)
         ExcelManager.saveDataToExcel(personData);
 
         // Setup the WebDriver
@@ -40,7 +41,6 @@ public class FormAutomation {
             // Wait a bit longer to make sure Google fully loads
             Thread.sleep(5000);
 
-
             // Now try to navigate to the actual site (replace with your actual URL)
             String targetUrl = "https://sasq-sat.cbp.dhs.gov/person?query=person"; // Your target URL
             System.out.println("Navigating to: " + targetUrl);
@@ -62,12 +62,24 @@ public class FormAutomation {
                 Thread.sleep(5000);
 
                 // Fill out the second page
-                FormFiller.fillSecondPage(driver, personData);
+                boolean secondPageSuccess = FormFiller.fillSecondPage(driver, personData);
 
-                // Wait a bit before finishing
-                Thread.sleep(5000);
+                if (secondPageSuccess) {
+                    System.out.println("✅ Second page completed successfully!");
 
-                System.out.println("Form automation completed successfully!");
+                    // Wait a moment for any post-submission processing
+                    Thread.sleep(3000);
+
+                    // Capture TECS ID from the page
+                    String tecsId = captureTecsId(driver);
+
+                    // Update PersonData and Excel with TECS ID
+                    updatePersonDataWithTecsId(personData, tecsId);
+
+                    System.out.println("✅ Form automation completed successfully with TECS ID capture!");
+                } else {
+                    System.out.println("❌ Failed to complete the second page.");
+                }
             } else {
                 System.out.println("Failed to complete the first page. Stopping.");
             }
@@ -86,6 +98,169 @@ public class FormAutomation {
             // Close the browser
             driver.quit();
             System.out.println("Browser closed. Script execution completed.");
+        }
+    }
+
+    /**
+     * Capture TECS ID from the page after form submission
+     * @param driver WebDriver instance
+     * @return TECS ID string or null if not found
+     */
+    private static String captureTecsId(WebDriver driver) {
+        try {
+            System.out.println("🔍 Attempting to capture TECS ID from page...");
+
+            // Wait a bit for the page to load completely after submission
+            Thread.sleep(5000);
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Try multiple strategies to find TECS ID
+            String tecsId = null;
+
+            // Strategy 1: Look for elements containing "TECS" and numbers
+            tecsId = (String) js.executeScript(
+                    "var elements = document.querySelectorAll('*');" +
+                            "for (var i = 0; i < elements.length; i++) {" +
+                            "  var text = elements[i].textContent || elements[i].innerText || '';" +
+                            "  var match = text.match(/TECS[\\s\\-_#:]*([A-Z0-9]{8,20})/i);" +
+                            "  if (match && match[1]) {" +
+                            "    console.log('Found TECS ID via Strategy 1:', match[1]);" +
+                            "    return match[1];" +
+                            "  }" +
+                            "}" +
+                            "return null;"
+            );
+
+            if (tecsId != null && !tecsId.trim().isEmpty()) {
+                System.out.println("✅ TECS ID captured via Strategy 1: " + tecsId);
+                return tecsId.trim();
+            }
+
+            // Strategy 2: Look for ID patterns in success messages or confirmation
+            tecsId = (String) js.executeScript(
+                    "var elements = document.querySelectorAll('*');" +
+                            "for (var i = 0; i < elements.length; i++) {" +
+                            "  var text = elements[i].textContent || elements[i].innerText || '';" +
+                            "  if (text.toLowerCase().includes('id') || text.toLowerCase().includes('number') || text.toLowerCase().includes('reference')) {" +
+                            "    var match = text.match(/([A-Z0-9]{8,20})/g);" +
+                            "    if (match) {" +
+                            "      for (var j = 0; j < match.length; j++) {" +
+                            "        if (match[j].length >= 8) {" +
+                            "          console.log('Found potential TECS ID via Strategy 2:', match[j]);" +
+                            "          return match[j];" +
+                            "        }" +
+                            "      }" +
+                            "    }" +
+                            "  }" +
+                            "}" +
+                            "return null;"
+            );
+
+            if (tecsId != null && !tecsId.trim().isEmpty()) {
+                System.out.println("✅ TECS ID captured via Strategy 2: " + tecsId);
+                return tecsId.trim();
+            }
+
+            // Strategy 3: Look for any alphanumeric ID on the page
+            tecsId = (String) js.executeScript(
+                    "var bodyText = document.body.textContent || document.body.innerText || '';" +
+                            "var matches = bodyText.match(/\\b[A-Z0-9]{10,}\\b/g);" +
+                            "if (matches && matches.length > 0) {" +
+                            "  console.log('Found potential ID via Strategy 3:', matches[0]);" +
+                            "  return matches[0];" +
+                            "}" +
+                            "return null;"
+            );
+
+            if (tecsId != null && !tecsId.trim().isEmpty()) {
+                System.out.println("✅ TECS ID captured via Strategy 3: " + tecsId);
+                return tecsId.trim();
+            }
+
+            // Strategy 4: Look in URL parameters
+            String currentUrl = driver.getCurrentUrl();
+            if (currentUrl.contains("id=") || currentUrl.contains("tecs")) {
+                tecsId = (String) js.executeScript(
+                        "var url = window.location.href;" +
+                                "var match = url.match(/[?&](?:id|tecs|reference)=([A-Z0-9]+)/i);" +
+                                "if (match && match[1]) {" +
+                                "  console.log('Found TECS ID in URL:', match[1]);" +
+                                "  return match[1];" +
+                                "}" +
+                                "return null;"
+                );
+
+                if (tecsId != null && !tecsId.trim().isEmpty()) {
+                    System.out.println("✅ TECS ID captured from URL: " + tecsId);
+                    return tecsId.trim();
+                }
+            }
+
+            // Strategy 5: Look for success message elements
+            tecsId = (String) js.executeScript(
+                    "var successElements = document.querySelectorAll('.success, .confirmation, .alert-success, [class*=\"success\"], [id*=\"success\"]');" +
+                            "for (var i = 0; i < successElements.length; i++) {" +
+                            "  var text = successElements[i].textContent || successElements[i].innerText || '';" +
+                            "  var match = text.match(/([A-Z0-9]{8,20})/g);" +
+                            "  if (match) {" +
+                            "    for (var j = 0; j < match.length; j++) {" +
+                            "      if (match[j].length >= 8) {" +
+                            "        console.log('Found TECS ID in success element:', match[j]);" +
+                            "        return match[j];" +
+                            "      }" +
+                            "    }" +
+                            "  }" +
+                            "}" +
+                            "return null;"
+            );
+
+            if (tecsId != null && !tecsId.trim().isEmpty()) {
+                System.out.println("✅ TECS ID captured from success element: " + tecsId);
+                return tecsId.trim();
+            }
+
+            System.out.println("❌ Could not find TECS ID on the page");
+
+            // Debug: Print page content to console for manual inspection
+            String pageContent = (String) js.executeScript("return document.body.textContent || document.body.innerText || '';");
+            System.out.println("📄 Page content for manual inspection:");
+            System.out.println(pageContent.substring(0, Math.min(500, pageContent.length())) + "...");
+
+            return null;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error capturing TECS ID: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Update PersonData with TECS ID and save to Excel
+     * @param personData The PersonData object to update
+     * @param tecsId The captured TECS ID
+     */
+    private static void updatePersonDataWithTecsId(PersonData personData, String tecsId) {
+        try {
+            if (tecsId != null && !tecsId.trim().isEmpty()) {
+                personData.setTecsId(tecsId.trim());
+                System.out.println("✅ PersonData updated with TECS ID: " + tecsId);
+
+                // Update Excel file with complete data including TECS ID
+                ExcelManager.updateExcelWithTecsId(personData);
+
+                System.out.println("✅ Final PersonData: " + personData.toString());
+            } else {
+                personData.setTecsId("NOT_CAPTURED");
+                System.out.println("⚠️ TECS ID not captured, setting to 'NOT_CAPTURED'");
+
+                // Still update Excel with available data
+                ExcelManager.updateExcelWithTecsId(personData);
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error updating PersonData with TECS ID: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

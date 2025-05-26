@@ -4,6 +4,7 @@ package com.formautomation;
  * Class representing a person's data for form filling
  */
 public class PersonData {
+    private String tecsId; // TECS ID - First column
     private String firstName;
     private String lastName;
     private String dob;
@@ -21,7 +22,16 @@ public class PersonData {
         // Default constructor
     }
 
-    // Getters and setters
+    // TECS ID getter and setter
+    public String getTecsId() {
+        return tecsId;
+    }
+
+    public void setTecsId(String tecsId) {
+        this.tecsId = tecsId;
+    }
+
+    // Existing getters and setters
     public String getFirstName() {
         return firstName;
     }
@@ -113,7 +123,8 @@ public class PersonData {
     @Override
     public String toString() {
         return "PersonData{" +
-                "firstName='" + firstName + '\'' +
+                "tecsId='" + tecsId + '\'' +
+                ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", dob='" + dob + '\'' +
                 ", passportNumber='" + passportNumber + '\'' +
