@@ -712,171 +712,90 @@ public class FormFiller {
      */
 
     /**
-     * SIMPLIFIED and ROBUST: Fill A# (Alien Number) field
-     * This method uses multiple strategies to reliably find and fill the A# input field
+     * ULTRA SIMPLE: Fill A# (Alien Number) field - No complex JavaScript
      */
     private static boolean fillAlienNumberFixed(WebDriver driver, String aNumber) {
         try {
-            System.out.println("🎯 SIMPLIFIED: Filling A# field with: " + aNumber);
+            System.out.println("🎯 ULTRA SIMPLE: Filling A# field with: " + aNumber);
             JavascriptExecutor js = (JavascriptExecutor) driver;
 
-            // Wait a moment for the field to be fully rendered
-            Thread.sleep(1000);
+            // Wait for field to be ready
+            Thread.sleep(2000);
 
-            // Strategy 1: Direct approach - find input with mask="0*" and maxlength="9"
-            Boolean result1 = (Boolean) js.executeScript(
-                    "console.log('Strategy 1: Direct input targeting');" +
-                            "var inputs = document.querySelectorAll('input[mask=\"0*\"][maxlength=\"9\"]');" +
-                            "console.log('Found ' + inputs.length + ' inputs with mask=0* and maxlength=9');" +
+            // Ultra simple approach - just find the newest input with the right attributes
+            Boolean result = (Boolean) js.executeScript(
+                    "var inputs = document.querySelectorAll('input[mask=\"0*\"]');" +
                             "if (inputs.length > 0) {" +
-                            "  var aInput = inputs[inputs.length - 1];" + // Get the newest one
-                            "  console.log('Found A# input, attempting to fill...');" +
-                            "  aInput.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "  var aInput = inputs[inputs.length - 1];" +
                             "  aInput.click();" +
                             "  aInput.focus();" +
-                            "  aInput.value = '';" + // Clear first
-                            "  aInput.value = '" + aNumber + "';" +
-                            "  console.log('Value set to: ' + aInput.value);" +
-                            "  " +
-                            "  // Trigger multiple events for Angular Material compatibility" +
-                            "  var inputEvent = new Event('input', {bubbles: true, cancelable: true});" +
-                            "  var changeEvent = new Event('change', {bubbles: true, cancelable: true});" +
-                            "  var blurEvent = new Event('blur', {bubbles: true, cancelable: true});" +
-                            "  " +
-                            "  aInput.dispatchEvent(inputEvent);" +
-                            "  aInput.dispatchEvent(changeEvent);" +
-                            "  setTimeout(() => {" +
-                            "    aInput.blur();" +
-                            "    aInput.dispatchEvent(blurEvent);" +
-                            "  }, 100);" +
-                            "  " +
-                            "  console.log('Events dispatched successfully');" +
+                            "  aInput.value = arguments[0];" +
+                            "  aInput.dispatchEvent(new Event('input', {bubbles: true}));" +
+                            "  aInput.dispatchEvent(new Event('change', {bubbles: true}));" +
+                            "  aInput.blur();" +
                             "  return true;" +
                             "}" +
-                            "return false;"
+                            "return false;", aNumber
             );
 
-            if (result1 != null && result1) {
-                Thread.sleep(2000);
-                System.out.println("✅ Strategy 1 SUCCESS: A# filled using direct input targeting");
+            if (result != null && result) {
+                Thread.sleep(1000);
+                System.out.println("✅ SUCCESS: A# filled with simple approach");
                 return true;
             }
 
-            System.out.println("⚠️ Strategy 1 failed, trying Strategy 2...");
-
-            // Strategy 2: Find by label "A #" and traverse to input
+            // Fallback: Try with maxlength="9"
+            System.out.println("⚠️ Trying fallback approach...");
             Boolean result2 = (Boolean) js.executeScript(
-                    "console.log('Strategy 2: Label-based targeting');" +
-                            "var labels = document.querySelectorAll('mat-label');" +
-                            "var aInput = null;" +
-                            "for (var i = 0; i < labels.length; i++) {" +
-                            "  var labelText = labels[i].textContent.trim();" +
-                            "  console.log('Checking label: ' + labelText);" +
-                            "  if (labelText.includes('A #') || labelText.includes('A#')) {" +
-                            "    console.log('Found A# label: ' + labelText);" +
-                            "    var formField = labels[i].closest('mat-form-field');" +
-                            "    if (formField) {" +
-                            "      aInput = formField.querySelector('input[type=\"text\"]');" +
-                            "      if (aInput) {" +
-                            "        console.log('Found input via label traversal');" +
-                            "        break;" +
-                            "      }" +
-                            "    }" +
-                            "  }" +
-                            "}" +
-                            "" +
-                            "if (aInput) {" +
-                            "  console.log('Found A# input via label, attempting to fill...');" +
-                            "  aInput.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                    "var inputs = document.querySelectorAll('input[maxlength=\"9\"]');" +
+                            "if (inputs.length > 0) {" +
+                            "  var aInput = inputs[inputs.length - 1];" +
                             "  aInput.click();" +
                             "  aInput.focus();" +
-                            "  aInput.value = '';" +
-                            "  aInput.value = '" + aNumber + "';" +
-                            "  console.log('Value set to: ' + aInput.value);" +
-                            "  " +
+                            "  aInput.value = arguments[0];" +
                             "  aInput.dispatchEvent(new Event('input', {bubbles: true}));" +
                             "  aInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  setTimeout(() => aInput.blur(), 100);" +
+                            "  aInput.blur();" +
                             "  return true;" +
                             "}" +
-                            "return false;"
+                            "return false;", aNumber
             );
 
             if (result2 != null && result2) {
-                Thread.sleep(2000);
-                System.out.println("✅ Strategy 2 SUCCESS: A# filled using label targeting");
+                Thread.sleep(1000);
+                System.out.println("✅ SUCCESS: A# filled with fallback approach");
                 return true;
             }
 
-            System.out.println("⚠️ Strategy 2 failed, trying Strategy 3...");
-
-            // Strategy 3: Find the newest text input that's empty and in a visible form field
+            // Last resort: Try the newest text input
+            System.out.println("⚠️ Trying last resort approach...");
             Boolean result3 = (Boolean) js.executeScript(
-                    "console.log('Strategy 3: Newest empty input targeting');" +
-                            "var inputs = document.querySelectorAll('input.mat-input-element[type=\"text\"]:not([readonly]):not([disabled])');" +
-                            "var visibleEmptyInputs = [];" +
+                    "var inputs = document.querySelectorAll('input.mat-input-element[type=\"text\"]');" +
+                            "var visibleInputs = [];" +
                             "for (var i = 0; i < inputs.length; i++) {" +
-                            "  var rect = inputs[i].getBoundingClientRect();" +
-                            "  if (rect.width > 0 && rect.height > 0 && inputs[i].offsetParent !== null && inputs[i].value === '') {" +
-                            "    // Check if it might be the A# field by checking nearby labels or attributes" +
-                            "    var formField = inputs[i].closest('mat-form-field');" +
-                            "    if (formField) {" +
-                            "      var label = formField.querySelector('mat-label');" +
-                            "      if (label && (label.textContent.includes('A #') || label.textContent.includes('A#'))) {" +
-                            "        visibleEmptyInputs.push(inputs[i]);" +
-                            "        console.log('Found potential A# input');" +
-                            "      } else if (inputs[i].getAttribute('maxlength') === '9' || inputs[i].getAttribute('mask') === '0*') {" +
-                            "        visibleEmptyInputs.push(inputs[i]);" +
-                            "        console.log('Found input with A# characteristics (maxlength=9 or mask=0*)');" +
-                            "      }" +
-                            "    }" +
+                            "  if (inputs[i].offsetWidth > 0 && inputs[i].offsetHeight > 0 && inputs[i].value === '') {" +
+                            "    visibleInputs.push(inputs[i]);" +
                             "  }" +
                             "}" +
-                            "" +
-                            "if (visibleEmptyInputs.length > 0) {" +
-                            "  var aInput = visibleEmptyInputs[visibleEmptyInputs.length - 1];" +
-                            "  console.log('Using newest potential A# input');" +
-                            "  aInput.scrollIntoView({behavior: 'smooth', block: 'center'});" +
+                            "if (visibleInputs.length > 0) {" +
+                            "  var aInput = visibleInputs[visibleInputs.length - 1];" +
                             "  aInput.click();" +
                             "  aInput.focus();" +
-                            "  aInput.value = '" + aNumber + "';" +
-                            "  console.log('Value set to: ' + aInput.value);" +
-                            "  " +
+                            "  aInput.value = arguments[0];" +
                             "  aInput.dispatchEvent(new Event('input', {bubbles: true}));" +
                             "  aInput.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "  setTimeout(() => aInput.blur(), 100);" +
+                            "  aInput.blur();" +
                             "  return true;" +
                             "}" +
-                            "console.log('No suitable inputs found');" +
-                            "return false;"
+                            "return false;", aNumber
             );
 
             if (result3 != null && result3) {
-                Thread.sleep(2000);
-                System.out.println("✅ Strategy 3 SUCCESS: A# filled using newest empty input");
+                System.out.println("✅ SUCCESS: A# filled with last resort approach");
                 return true;
             }
 
-            System.out.println("❌ All strategies failed for A# field");
-
-            // Debug: Print available inputs to console
-            js.executeScript(
-                    "console.log('=== DEBUG: Available inputs ===');" +
-                            "var allInputs = document.querySelectorAll('input');" +
-                            "for (var i = 0; i < allInputs.length; i++) {" +
-                            "  var input = allInputs[i];" +
-                            "  var rect = input.getBoundingClientRect();" +
-                            "  if (rect.width > 0 && rect.height > 0) {" +
-                            "    console.log('Input ' + i + ': type=' + input.type + ', id=' + input.id + ', maxlength=' + input.getAttribute('maxlength') + ', mask=' + input.getAttribute('mask') + ', value=' + input.value);" +
-                            "    var formField = input.closest('mat-form-field');" +
-                            "    if (formField) {" +
-                            "      var label = formField.querySelector('mat-label');" +
-                            "      if (label) console.log('  Label: ' + label.textContent);" +
-                            "    }" +
-                            "  }" +
-                            "}"
-            );
-
+            System.out.println("❌ All approaches failed for A# field");
             return false;
 
         } catch (Exception e) {
@@ -885,7 +804,6 @@ public class FormFiller {
             return false;
         }
     }
-
     /**
      * FIXED: Fill passport fields using label targeting and random dropdown selection.
      * This method identifies fields by their <mat-label> and selects a random,
