@@ -55,14 +55,14 @@ public class FormAutomation {
             System.out.println("Page title: " + driver.getTitle());
 
             // Fill out the first page
-            boolean firstPageSuccess = SimplifiedFormFiller.fillFirstPage(driver, personData);
+            boolean firstPageSuccess = FormFiller.fillFirstPage(driver, personData);
 
             if (firstPageSuccess) {
                 // Wait for second page to load
                 Thread.sleep(5000);
 
                 // Fill out the second page
-                SimplifiedFormFiller.fillSecondPage(driver, personData);
+                FormFiller.fillSecondPage(driver, personData);
 
                 // Wait a bit before finishing
                 Thread.sleep(5000);
