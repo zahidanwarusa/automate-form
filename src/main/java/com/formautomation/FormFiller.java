@@ -114,10 +114,10 @@ public class FormFiller {
             System.out.println("3. Primary Action dropdown (4 - REFER TO PASSPORT CONTROL)");
             selectDropdownFixed(driver, "mat-select-8", "mat-option-245");
 
-            // PRIMARY DATES - WORKING
-            System.out.println("3a. Filling Primary Start Date");
-            String primaryStartDate = generatePastDate(30, 365);
-            fillDateInputFixed(driver, findDateInputByMask(driver, "00/00/0000", 0), primaryStartDate);
+//            // PRIMARY DATES - WORKING
+//            System.out.println("3a. Filling Primary Start Date");
+//            String primaryStartDate = generatePastDate(30, 365);
+//            fillDateInputFixed(driver, findDateInputByMask(driver, "00/00/0000", 0), primaryStartDate);
 
             System.out.println("3b. Filling Primary End Date");
             String primaryEndDate = generateFutureDate(30, 365);
@@ -712,7 +712,7 @@ public class FormFiller {
      */
 
     /**
-     * FIXED: Fill A# (Alien Number) - Hardcoded direct targeting by ID as requested
+     * FIXED: Fill A# (Alien Number) - Refined targeting by label and attributes
      */
     private static boolean fillAlienNumberFixed(WebDriver driver, String aNumber) {
         try {
@@ -720,17 +720,33 @@ public class FormFiller {
             JavascriptExecutor js = (JavascriptExecutor) driver;
 
             Boolean result = (Boolean) js.executeScript(
-                    "var input = document.getElementById('mat-input-21');" + // Directly target by ID from the provided HTML
-                            "if (!input) {" +
-                            "  console.error('A# input with ID mat-input-21 not found.');" +
+                    "var aInput = null;" +
+                            "var labels = document.querySelectorAll('mat-label');" +
+                            "for (var i = 0; i < labels.length; i++) {" +
+                            "  var labelText = labels[i].textContent.trim();" +
+                            "  if (labelText.includes('A #')) {" +
+                            "    var formField = labels[i].closest('mat-form-field');" +
+                            "    if (formField) {" +
+                            "      // Find input within this specific mat-form-field that matches attributes" +
+                            "      aInput = formField.querySelector('input[type=\"text\"][maxlength=\"9\"]');" +
+                            "      if (aInput) {" +
+                            "        break; // Found the specific input" +
+                            "      }" +
+                            "    }" +
+                            "  }" +
+                            "}" +
+                            "" +
+                            "if (!aInput) {" +
+                            "  console.error('A# input not found using label and attribute criteria.');" +
                             "  return false;" +
                             "}" +
                             "" +
+                            "input = aInput;" + // Assign to 'input' variable for consistency
                             "input.focus();" +
                             "input.value = '" + aNumber + "';" +
                             "input.dispatchEvent(new Event('input', {bubbles: true}));" +
                             "input.dispatchEvent(new Event('change', {bubbles: true}));" +
-                            "input.blur();;" +
+                            "input.blur();" +
                             "return true;"
             );
 
@@ -746,7 +762,6 @@ public class FormFiller {
             return false;
         }
     }
-
     /**
      * FIXED: Fill passport fields using label targeting and random dropdown selection.
      * This method identifies fields by their <mat-label> and selects a random,
