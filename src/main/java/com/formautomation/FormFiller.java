@@ -212,8 +212,45 @@ public class FormFiller {
             System.out.println("\n18. Adding Passport");
             if (clickButtonRobust(driver, "Add Passport")) {
                 Thread.sleep(4000);
-                fillPassportFieldsFixed(driver, data);
+
+                // This logic for finding elements was working, so we keep it.
+                List<String> passportSelects = findAllSelectIds(driver);
+                List<String> passportInputs = findAllTextInputs(driver);
+                List<String> passportDateInputs = findAllDateInputs(driver);
+
+                // FIXED: Select a random passport type instead of a hardcoded one.
+                System.out.println("  - Selecting random passport type");
+                if (passportSelects.size() > 0) {
+                    // We target the second to last select element, as in your original code.
+                    selectRandomOptionForDropdown(driver, passportSelects.get(passportSelects.size() - 2));
+                }
+
+                // UNCHANGED: Your working logic for filling the passport number.
+                System.out.println("  - Filling passport number");
+                if (passportInputs.size() > 0) {
+                    fillInputFixed(driver, passportInputs.get(passportInputs.size() - 1), data.getPassportNumber());
+                }
+
+                // FIXED: Select a random passport country instead of a hardcoded one.
+                System.out.println("  - Selecting random passport country");
+                if (passportSelects.size() > 1) {
+                    // We target the last select element, as in your original code.
+                    selectRandomOptionForDropdown(driver, passportSelects.get(passportSelects.size() - 1));
+                }
+
+                // UNCHANGED: Your working logic for the dates.
+                System.out.println("  - Filling passport issue date");
+                if (passportDateInputs.size() > 1) {
+                    fillDateInputFixed(driver, passportDateInputs.get(passportDateInputs.size() - 2), data.getPassportIssueDate());
+                }
+
+                System.out.println("  - Filling passport expiry date");
+                if (passportDateInputs.size() > 0) {
+                    fillDateInputFixed(driver, passportDateInputs.get(passportDateInputs.size() - 1), data.getPassportExpiryDate());
+                }
             }
+
+
             // === A NUMBER - WORKING ===
             System.out.println("\n19. Adding A#");
             if (clickButtonRobust(driver, "Add A#")) {
@@ -674,7 +711,7 @@ public class FormFiller {
     }
      */
     /**
-     * FIXED: Fill A# (Alien Number) - Enhanced targeting
+     * FIXED: Fill A# (Alien Number) - Enhanced targeting with specific HTML in mind
      */
     private static boolean fillAlienNumberFixed(WebDriver driver, String aNumber) {
         try {
@@ -684,31 +721,61 @@ public class FormFiller {
             Boolean result = (Boolean) js.executeScript(
                     "// Try multiple approaches to find A# input" +
                             "var aInput = null;" +
-                            "// Method 1: Find by maxlength='9' and mask='0*'" +
-                            "var inputs1 = document.querySelectorAll('input[maxlength=\"9\"][mask=\"0*\"]');" +
-                            "if (inputs1.length > 0) {" +
-                            "  aInput = inputs1[inputs1.length - 1];" +
+
+                            "// Method 1: Find by A# label (most robust given the HTML provided)" +
+                            "var labels = document.querySelectorAll('mat-label, label');" +
+                            "for (var i = 0; i < labels.length; i++) {" +
+                            "  var labelText = labels[i].textContent.trim();" +
+                            "  if (labelText.includes('A #') || labelText.includes('A-Number') || labelText.includes('Alien Number')) {" +
+                            "    var formField = labels[i].closest('mat-form-field') || labels[i].closest('.mat-form-field');" +
+                            "    if (formField) {" +
+                            "      aInput = formField.querySelector('input[type=\"text\"], input[type=\"number\"]');" +
+                            "      // If found, ensure it has maxlength=9 to be more specific" +
+                            "      if (aInput && aInput.getAttribute('maxlength') === '9') {" +
+                            "        break;" +
+                            "      } else {" +
+                            "        aInput = null; // Reset if not matching maxlength" +
+                            "      }" +
+                            "    }" +
+                            "  }" +
                             "}" +
-                            "// Method 2: Find newest input with autocomplete='off'" +
+
+                            "// Method 2: Find by autocomplete='off' and maxlength='9' as a strong fallback" +
                             "if (!aInput) {" +
                             "  var inputs2 = document.querySelectorAll('input[autocomplete=\"off\"][maxlength=\"9\"]');" +
                             "  if (inputs2.length > 0) {" +
                             "    aInput = inputs2[inputs2.length - 1];" +
                             "  }" +
                             "}" +
-                            "// Method 3: Find by A# label" +
+
+                            "// Method 3: Find by aria-label or id containing 'A-Number' or 'Alien' (less reliable if dynamic IDs)" +
                             "if (!aInput) {" +
-                            "  var labels = document.querySelectorAll('mat-label');" +
-                            "  for (var i = 0; i < labels.length; i++) {" +
-                            "    if (labels[i].textContent.includes('A #')) {" +
-                            "      var formField = labels[i].closest('mat-form-field');" +
-                            "      if (formField) {" +
-                            "        aInput = formField.querySelector('input[type=\"text\"]');" +
+                            "  var inputs0 = document.querySelectorAll('input[aria-label*=\"A-Number\"], input[aria-label*=\"Alien\"], input[id*=\"A-Number\"], input[id*=\"Alien\"]');" +
+                            "  if (inputs0.length > 0) {" +
+                            "    aInput = inputs0[inputs0.length - 1];" +
+                            "  }" +
+                            "}" +
+
+                            "// Method 4: Find inputs with maxlength 9 and associated with labels that contain 'A#' or 'Alien'" +
+                            "if (!aInput) {" +
+                            "  var inputs3 = document.querySelectorAll('input[maxlength=\"9\"]');" +
+                            "  for (var i = 0; i < inputs3.length; i++) {" +
+                            "    var inputId = inputs3[i].id;" +
+                            "    if (inputId) {" +
+                            "      var associatedLabel = document.querySelector('label[for=\"' + inputId + '\"]');" +
+                            "      if (associatedLabel && (associatedLabel.textContent.includes('A #') || associatedLabel.textContent.includes('A-Number') || associatedLabel.textContent.includes('Alien'))) {" +
+                            "        aInput = inputs3[i];" +
                             "        break;" +
                             "      }" +
                             "    }" +
+                            "    var parentLabel = inputs3[i].closest('mat-form-field') ? inputs3[i].closest('mat-form-field').querySelector('mat-label, label') : null;" +
+                            "    if (parentLabel && (parentLabel.textContent.includes('A #') || parentLabel.textContent.includes('A-Number') || parentLabel.textContent.includes('Alien'))) {" +
+                            "        aInput = inputs3[i];" +
+                            "        break;" +
+                            "    }" +
                             "  }" +
                             "}" +
+
                             "if (aInput) {" +
                             "  aInput.focus();" +
                             "  aInput.value = '" + aNumber + "';" +
@@ -893,7 +960,7 @@ public class FormFiller {
             System.out.println("  - FIXED: Filling phone number");
             String phoneNumber = "202" + (1000000 + random.nextInt(9000000));
             Boolean numberResult = (Boolean) js.executeScript(
-                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"]):not([mask])');" +
+                    "var inputs = document.querySelectorAll('input.mat-input-element:not([readonly]):not([disabled]):not([type=\"hidden\"])');" + // Removed :not([mask])
                             "var visibleInputs = [];" +
                             "for (var i = 0; i < inputs.length; i++) {" +
                             "  var rect = inputs[i].getBoundingClientRect();" +
@@ -902,7 +969,23 @@ public class FormFiller {
                             "  }" +
                             "}" +
                             "if (visibleInputs.length === 0) return false;" +
-                            "var phoneInput = visibleInputs[visibleInputs.length - 1];" +
+                            "var phoneInput = null;" +
+                            "// Try to find a phone-specific input first" +
+                            "for (var i = 0; i < visibleInputs.length; i++) {" +
+                            "  if (visibleInputs[i].placeholder && visibleInputs[i].placeholder.toLowerCase().includes('phone')) {" +
+                            "    phoneInput = visibleInputs[i];" +
+                            "    break;" +
+                            "  }" +
+                            "  if (visibleInputs[i].type === 'tel') {" +
+                            "    phoneInput = visibleInputs[i];" +
+                            "    break;" +
+                            "  }" +
+                            "}" +
+                            "// Fallback to the last visible input if a phone-specific one isn't found" +
+                            "if (!phoneInput) {" +
+                            "  phoneInput = visibleInputs[visibleInputs.length - 1];" +
+                            "}" +
+                            "if (!phoneInput) return false;" +
                             "phoneInput.focus();" +
                             "phoneInput.value = '" + phoneNumber + "';" +
                             "phoneInput.dispatchEvent(new Event('input', {bubbles: true}));" +
@@ -1248,7 +1331,7 @@ public class FormFiller {
             };
 
             // Sequentially fill the address form
-            if (!selectRandomOptionByLabel.apply("Address Type")) return false;
+            if (!selectRandomOptionByLabel.apply("Type:")) return false;
             Thread.sleep(2000);
 
             if (!fillInputByLabel.apply("Street", "123 Automation Lane")) return false;
@@ -1510,6 +1593,68 @@ public class FormFiller {
         } catch (Exception e) {
             System.err.println("Error finding newest select: " + e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Selects a random, visible, and enabled option from a dropdown panel
+     * after it has been opened.
+     * @param driver The WebDriver instance.
+     * @param selectId The ID of the mat-select element to click and open.
+     * @return true if an option was successfully selected, false otherwise.
+     */
+    private static boolean selectRandomOptionForDropdown(WebDriver driver, String selectId) {
+        try {
+            System.out.println("🎯 Selecting random option for dropdown ID: " + selectId);
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            forceCloseDropdown(driver); // Ensure no other dropdowns are open
+            Thread.sleep(500);
+
+            // Step 1: Click the dropdown to open its options panel.
+            Boolean clicked = (Boolean) js.executeScript(
+                    "var select = document.getElementById(arguments[0]);" +
+                            "if (!select) { console.error('Dropdown not found:', arguments[0]); return false; }" +
+                            "var trigger = select.querySelector('.mat-select-trigger');" +
+                            "if (trigger) { trigger.click(); } else { select.click(); }" +
+                            "return true;", selectId
+            );
+
+            if (clicked == null || !clicked) {
+                System.out.println("❌ Failed to click dropdown to open panel: " + selectId);
+                return false;
+            }
+
+            // Wait for the options panel to animate and render.
+            Thread.sleep(2000);
+
+            // Step 2: Find all visible options and click a random one.
+            Boolean selected = (Boolean) js.executeScript(
+                    "var options = Array.from(document.querySelectorAll('mat-option:not(.mat-option-disabled)'));" +
+                            "var visibleOptions = options.filter(o => o.offsetParent !== null && o.textContent.trim() !== '');" +
+                            "if (visibleOptions.length > 0) {" +
+                            "  var randomIndex = Math.floor(Math.random() * visibleOptions.length);" +
+                            "  console.log('Randomly selecting option: ' + visibleOptions[randomIndex].textContent);" +
+                            "  visibleOptions[randomIndex].click();" +
+                            "  setTimeout(() => document.body.click(), 500);" + // Click away to close the panel
+                            "  return true;" +
+                            "} else {" +
+                            "  console.error('No visible options found for dropdown:', arguments[0]);" +
+                            "  return false;" +
+                            "}", selectId
+            );
+
+            if (selected != null && selected) {
+                System.out.println("✅ Randomly selected an option for: " + selectId);
+                Thread.sleep(1000);
+                return true;
+            }
+
+            System.out.println("❌ Could not find and select a random option for dropdown: " + selectId);
+            return false;
+
+        } catch (Exception e) {
+            System.err.println("❌ EXCEPTION during random dropdown selection: " + e.getMessage());
+            return false;
         }
     }
 
