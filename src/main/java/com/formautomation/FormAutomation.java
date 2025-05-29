@@ -7,23 +7,92 @@ import org.openqa.selenium.JavascriptExecutor;
 
 public class FormAutomation {
     public static void main(String[] args) {
-        System.out.println("Starting form automation...");
+        System.out.println("Starting form automation with email notification...");
+
+        // Initialize email service
+        EmailService emailService = new EmailService();
+        int totalRuns = emailService.getLoopCount();
+        int successfulRuns = 0;
+
+        System.out.println("📋 Configured to run " + totalRuns + " times");
 
         // Print diagnostic information before starting
         BrowserDiagnostics.printDiagnosticInfo();
 
+        // Loop through the specified number of runs
+        for (int currentRun = 1; currentRun <= totalRuns; currentRun++) {
+            System.out.println("\n" + "=".repeat(50));
+            System.out.println("🚀 STARTING RUN " + currentRun + " of " + totalRuns);
+            System.out.println("=".repeat(50));
+
+            boolean runSuccess = performSingleRun(currentRun);
+
+            if (runSuccess) {
+                successfulRuns++;
+                System.out.println("✅ RUN " + currentRun + " COMPLETED SUCCESSFULLY");
+            } else {
+                System.out.println("❌ RUN " + currentRun + " FAILED");
+            }
+
+            // Wait between runs (except for the last run)
+            if (currentRun < totalRuns) {
+                System.out.println("⏳ Waiting 5 seconds before next run...");
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+
+        // Final summary
+        System.out.println("\n" + "=".repeat(50));
+        System.out.println("📊 AUTOMATION SUMMARY");
+        System.out.println("=".repeat(50));
+        System.out.println("Total Runs: " + totalRuns);
+        System.out.println("Successful Runs: " + successfulRuns);
+        System.out.println("Failed Runs: " + (totalRuns - successfulRuns));
+        System.out.println("=".repeat(50));
+
+        // Send email with results
+        if (successfulRuns > 0) {
+            System.out.println("📧 Sending email with results...");
+            boolean emailSent = emailService.sendResults(successfulRuns);
+            if (emailSent) {
+                System.out.println("✅ Email sent successfully!");
+            } else {
+                System.out.println("❌ Failed to send email");
+            }
+        } else {
+            System.out.println("⚠️ No successful runs to report via email");
+        }
+
+        System.out.println("🏁 All automation runs completed!");
+    }
+
+    /**
+     * Perform a single automation run
+     * @param runNumber Current run number
+     * @return true if successful, false if failed
+     */
+    private static boolean performSingleRun(int runNumber) {
         // Generate random person data
         PersonData personData = DataGenerator.generatePersonData();
 
-        // Save data to Excel for future reference (initial save without TECS ID)
-        ExcelManager.saveDataToExcel(personData);
+        // For first run, save to Excel (create new file)
+        // For subsequent runs, append to existing Excel
+        if (runNumber == 1) {
+            ExcelManager.saveDataToExcel(personData);
+        } else {
+            ExcelManager.appendDataToExcel(personData);
+        }
 
         // Setup the WebDriver
         WebDriver driver = setupDriver();
 
         if (driver == null) {
-            System.out.println("Failed to initialize WebDriver. Exiting...");
-            return;
+            System.out.println("Failed to initialize WebDriver for run " + runNumber);
+            return false;
         }
 
         try {
@@ -65,7 +134,7 @@ public class FormAutomation {
                 boolean secondPageSuccess = FormFiller.fillSecondPage(driver, personData);
 
                 if (secondPageSuccess) {
-                    System.out.println("✅ Second page completed successfully!");
+                    System.out.println("✅ Second page completed successfully for run " + runNumber + "!");
 
                     // Wait a moment for any post-submission processing
                     Thread.sleep(3000);
@@ -76,28 +145,32 @@ public class FormAutomation {
                     // Update PersonData and Excel with TECS ID
                     updatePersonDataWithTecsId(personData, tecsId);
 
-                    System.out.println("✅ Form automation completed successfully with TECS ID capture!");
+                    System.out.println("✅ Run " + runNumber + " completed successfully with TECS ID capture!");
+                    return true;
                 } else {
-                    System.out.println("❌ Failed to complete the second page.");
+                    System.out.println("❌ Failed to complete the second page for run " + runNumber + ".");
+                    return false;
                 }
             } else {
-                System.out.println("Failed to complete the first page. Stopping.");
+                System.out.println("❌ Failed to complete the first page for run " + runNumber + ". Stopping.");
+                return false;
             }
         } catch (Exception e) {
-            System.out.println("An error occurred during automation: " + e.getMessage());
+            System.out.println("❌ An error occurred during run " + runNumber + ": " + e.getMessage());
             e.printStackTrace();
+            return false;
         } finally {
             // Keep the browser open for a moment before closing
             try {
-                System.out.println("Automation complete. Keeping browser open for 10 seconds for review...");
-                Thread.sleep(10000);
+                System.out.println("Run " + runNumber + " complete. Keeping browser open for 5 seconds for review...");
+                Thread.sleep(5000);
             } catch (InterruptedException e) {
-                // Ignore
+                Thread.currentThread().interrupt();
             }
 
             // Close the browser
             driver.quit();
-            System.out.println("Browser closed. Script execution completed.");
+            System.out.println("Browser closed for run " + runNumber + ". Moving to next run or completion.");
         }
     }
 
