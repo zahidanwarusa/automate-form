@@ -2,6 +2,7 @@ package com.formautomation;
 
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
+import jakarta.activation.*;
 import java.io.*;
 import java.util.Properties;
 
@@ -91,7 +92,9 @@ public class EmailService {
             File attachment = new File(excelFile);
             if (attachment.exists()) {
                 MimeBodyPart attachmentPart = new MimeBodyPart();
-                attachmentPart.attachFile(attachment);
+                DataSource source = new FileDataSource(attachment);
+                attachmentPart.setDataHandler(new DataHandler(source));
+                attachmentPart.setFileName(attachment.getName());
                 multipart.addBodyPart(attachmentPart);
                 System.out.println("📎 Excel file attached: " + excelFile);
             } else {
