@@ -15,14 +15,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Utility class to handle Excel operations with TECS ID support
+ * FIXED: Utility class to handle Excel operations with proper TECS ID tracking
  */
 public class ExcelManager {
 
     private static final String EXCEL_FILE_NAME = "form_data.xlsx";
+    private static int currentRowNumber = 1; // Track which row we're working on
 
     /**
      * Save the generated person data to an Excel file (initial save without TECS ID)
+     * Only used for the FIRST run
      * @param personData The data to save
      */
     public static void saveDataToExcel(PersonData personData) {
@@ -43,8 +45,9 @@ public class ExcelManager {
                 cell.setCellValue(headers[i]);
             }
 
-            // Create data row
-            Row dataRow = sheet.createRow(1);
+            // Create data row for first run
+            currentRowNumber = 1; // First data row
+            Row dataRow = sheet.createRow(currentRowNumber);
 
             // Use reflection to get all getter methods from PersonData
             Map<String, String> dataMap = new HashMap<>();
@@ -86,7 +89,7 @@ public class ExcelManager {
             }
 
             workbook.close();
-            System.out.println("✅ Initial data saved to " + EXCEL_FILE_NAME);
+            System.out.println("✅ Initial data saved to " + EXCEL_FILE_NAME + " at row " + currentRowNumber);
 
         } catch (Exception e) {
             System.out.println("❌ Error saving initial data to Excel: " + e.getMessage());
@@ -95,7 +98,7 @@ public class ExcelManager {
     }
 
     /**
-     * Update the Excel file with TECS ID after form submission
+     * FIXED: Update the Excel file with TECS ID for the CURRENT ROW being processed
      * @param personData The complete data including TECS ID
      */
     public static void updateExcelWithTecsId(PersonData personData) {
@@ -111,28 +114,15 @@ public class ExcelManager {
                     sheet = workbook.getSheet("Form Data");
                 }
             } else {
-                // Create new workbook if file doesn't exist
-                workbook = new XSSFWorkbook();
-                sheet = workbook.createSheet("Form Data");
-
-                // Create header row
-                Row headerRow = sheet.createRow(0);
-                String[] headers = {
-                        "tecsId", "firstName", "lastName", "dob", "passportNumber",
-                        "passportIssueDate", "passportExpiryDate",
-                        "driverLicense", "ssn", "aNumber", "height", "weight"
-                };
-
-                for (int i = 0; i < headers.length; i++) {
-                    Cell cell = headerRow.createCell(i);
-                    cell.setCellValue(headers[i]);
-                }
+                System.out.println("❌ Excel file doesn't exist when trying to update TECS ID");
+                return;
             }
 
-            // Update the data row (row 1, since row 0 is header)
-            Row dataRow = sheet.getRow(1);
+            // FIXED: Update the CURRENT row, not always row 1
+            Row dataRow = sheet.getRow(currentRowNumber);
             if (dataRow == null) {
-                dataRow = sheet.createRow(1);
+                System.out.println("❌ No data row found at row " + currentRowNumber);
+                return;
             }
 
             // Get data using reflection
@@ -181,8 +171,7 @@ public class ExcelManager {
             }
 
             workbook.close();
-            System.out.println("✅ Excel updated with TECS ID: " + personData.getTecsId());
-            System.out.println("✅ Complete data saved to " + EXCEL_FILE_NAME);
+            System.out.println("✅ Excel row " + currentRowNumber + " updated with TECS ID: " + personData.getTecsId());
 
         } catch (Exception e) {
             System.out.println("❌ Error updating Excel with TECS ID: " + e.getMessage());
@@ -191,7 +180,8 @@ public class ExcelManager {
     }
 
     /**
-     * Add a new row of data to existing Excel file (for multiple entries)
+     * FIXED: Add a new row of data to existing Excel file (for runs 2+)
+     * This now sets the currentRowNumber so updateExcelWithTecsId knows which row to update
      * @param personData The data to add
      */
     public static void appendDataToExcel(PersonData personData) {
@@ -225,9 +215,9 @@ public class ExcelManager {
                 }
             }
 
-            // Find next available row
-            int nextRowNum = sheet.getLastRowNum() + 1;
-            Row dataRow = sheet.createRow(nextRowNum);
+            // FIXED: Find next available row and set currentRowNumber
+            currentRowNumber = sheet.getLastRowNum() + 1;
+            Row dataRow = sheet.createRow(currentRowNumber);
 
             // Get data using reflection
             Map<String, String> dataMap = new HashMap<>();
@@ -257,6 +247,9 @@ public class ExcelManager {
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = dataRow.createCell(i);
                 String value = dataMap.getOrDefault(headers[i], "");
+                if (headers[i].equals("tecsId") && (value == null || value.trim().isEmpty())) {
+                    value = "PENDING"; // Placeholder until TECS ID is captured
+                }
                 cell.setCellValue(value);
             }
 
@@ -271,11 +264,26 @@ public class ExcelManager {
             }
 
             workbook.close();
-            System.out.println("✅ New data row appended to " + EXCEL_FILE_NAME);
+            System.out.println("✅ New data row appended to " + EXCEL_FILE_NAME + " at row " + currentRowNumber);
 
         } catch (Exception e) {
             System.out.println("❌ Error appending data to Excel: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Reset the row counter (for testing or if you want to start fresh)
+     */
+    public static void resetRowCounter() {
+        currentRowNumber = 1;
+        System.out.println("🔄 Row counter reset to 1");
+    }
+
+    /**
+     * Get the current row number being processed
+     */
+    public static int getCurrentRowNumber() {
+        return currentRowNumber;
     }
 }
